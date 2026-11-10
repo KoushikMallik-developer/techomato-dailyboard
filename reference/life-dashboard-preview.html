@@ -1,0 +1,1257 @@
+<title>Life Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: phone column (max 440px). Navy hero panel with life score on top of a slate page; white cards; sticky tab bar with a centre quick-add button; bottom sheet for every add/edit form.
+   Palette and type follow the Techomato Colleges brand guide: royal blue #315bea, navy panels, slate page, Inter, 12-16px radii. */
+:root {
+  --bg: #f5f2ec; --card: #ffffff; --soft: #efeae1; --ink: #17181c; --muted: #5b5f6a; --line: #e4dfd5;
+  --brand: #c8381f; --brand-ink: #ffffff; --brand-soft: #fbe6e0; --brand-deep: #8e2413;
+  --ok: #047857; --ok-soft: #ecfdf5; --warn: #92400e; --warn-soft: #fffbeb; --bad: #be123c; --bad-soft: #fff1f2;
+  --panel: #17181c; --panel-2: #22242a; --panel-text: #9ca0ab; --panel-strong: #e7e8ec; --panel-line: #2a2c33;
+  --scrim: rgba(10, 17, 30, .55); --ring: #ec6850;
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-base: 15px; --fs-lg: 17px; --fs-xl: 20px; --fs-2xl: 26px; --fs-3xl: 32px; --fs-display: 56px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --r-xs: 6px; --r-pill: 999px; --hit: 44px; --white: #fff;
+  --f: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141417; --card: #1c1d22; --soft: #25272d; --ink: #f1efea; --muted: #a3a6af; --line: #2c2e35;
+    --brand-soft: #3a1e18; --brand-deep: #ec6850; --ok: #6ee7b7; --ok-soft: #12302a; --warn: #fcd34d; --warn-soft: #33290f; --bad: #fda4af; --bad-soft: #3a1821;
+    --panel: #0f1013; --panel-2: #1a1b20; --panel-text: #a3a6af; --panel-strong: #f1efea; --panel-line: #26282e; --ring: #ec6850; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141417; --card: #1c1d22; --soft: #25272d; --ink: #f1efea; --muted: #a3a6af; --line: #2c2e35;
+  --brand-soft: #3a1e18; --brand-deep: #ec6850; --ok: #6ee7b7; --ok-soft: #12302a; --warn: #fcd34d; --warn-soft: #33290f; --bad: #fda4af; --bad-soft: #3a1821;
+  --panel: #0f1013; --panel-2: #1a1b20; --panel-text: #a3a6af; --panel-strong: #f1efea; --panel-line: #26282e; --ring: #ec6850; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: var(--fs-md); line-height: 1.45; letter-spacing: -.005em;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+* { box-sizing: border-box; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.app { max-width: 440px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+/* top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding-block: 14px 6px; }
+.logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; letter-spacing: -.02em; }
+.tile { width: 30px; height: 30px; border-radius: var(--r-sm); background: var(--brand); display: grid; place-items: center; }
+.tile svg { width: 18px; height: 18px; stroke: var(--brand-ink); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ibtn { width: 36px; height: 36px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; padding: 0; }
+.ibtn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ptitle { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); margin-top: var(--s-1); }
+h1 { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.03em; line-height: 1.15; margin: 0; text-wrap: balance; }
+.back { font-size: var(--fs-md); font-weight: 600; color: var(--brand-deep); display: inline-block; padding: 6px 0 2px; }
+main { flex: 1; display: flex; flex-direction: column; gap: var(--s-3); padding-block: 12px 100px; }
+/* hero */
+.hero { background: var(--panel); color: var(--panel-strong); border-radius: var(--r-lg); padding: 18px; display: grid; gap: var(--s-4); }
+.hero .hi { font-size: var(--fs-md); color: var(--panel-text); }
+.hero h2 { margin: 2px 0 0; font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.02em; }
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.ring { position: relative; width: 84px; height: 84px; flex: none; }
+.ring svg { width: 84px; height: 84px; transform: rotate(-90deg); }
+.ring .tr { stroke: var(--panel-line); } .ring .fg { stroke: var(--ring); stroke-linecap: round; }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.03em; }
+.ring small { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: var(--fs-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-text); }
+.hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+.hs { background: var(--panel-2); border-radius: var(--r-md); padding: 10px 12px; min-width: 0; }
+.hs b { display: block; font-size: var(--fs-lg); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.hs span { font-size: var(--fs-xs); color: var(--panel-text); }
+/* cards */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-4); min-width: 0; }
+.card h2 { font-size: var(--fs-base); font-weight: 600; letter-spacing: -.015em; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); }
+.card h2 a { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.card h2 .chev { color: var(--brand-deep); }
+.card h2 small, .muted { font-size: var(--fs-sm); font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.ic { width: 28px; height: 28px; border-radius: 8px; background: var(--brand-soft); color: var(--brand-deep); display: grid; place-items: center; flex: none; }
+.ic svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+h3 { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 6px 0 0; }
+.row { display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; align-items: end; }
+.big { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-3); min-width: 0; }
+.stat .big { font-size: var(--fs-xl); overflow-wrap: anywhere; }
+.stat .muted { font-size: var(--fs-xs); display: block; }
+.empty { color: var(--muted); font-size: var(--fs-md); padding: 4px 0; }
+.note { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
+.more { font-size: var(--fs-sm); font-weight: 600; color: var(--brand-deep); display: inline-block; margin-top: var(--s-2); }
+/* buttons and fields */
+.btn { background: var(--brand); color: var(--brand-ink); border: 0; border-radius: var(--r-md); padding: 10px 16px; font-weight: 600; }
+.btn.sm { padding: 7px 12px; font-size: var(--fs-md); border-radius: var(--r-sm); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.danger { background: var(--bad); color: var(--card); }
+.btn.block { width: 100%; }
+.lnk { background: none; border: 0; color: var(--muted); font-size: var(--fs-sm); padding: 4px 6px; border-radius: var(--r-xs); }
+.field, form input:not([type=checkbox]), form select, form textarea { width: 100%; background: var(--soft); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; min-width: 0; }
+textarea { resize: vertical; min-height: 84px; }
+label.f { display: grid; gap: var(--s-1); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); }
+.inline { display: flex; gap: var(--s-2); }
+.inline .btn { flex: none; }
+.seg { display: flex; background: var(--soft); border: 1px solid var(--line); border-radius: var(--r-md); padding: 3px; gap: 3px; }
+.seg button { flex: 1; border: 0; background: none; border-radius: var(--r-sm); padding: 7px 4px; color: var(--muted); font-weight: 500; font-size: var(--fs-md); }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--line); font-weight: 600; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: var(--r-pill); padding: 4px 11px; font-size: var(--fs-sm); color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.ntitle { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -.03em; margin: 6px 0 10px; }
+.ngrp { font-size: var(--fs-md); font-weight: 600; color: var(--muted); margin: 16px 4px 6px; }
+.nrow { display: block; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0; font: inherit; color: var(--ink); }
+.nrow:first-child { border-top: 0; }
+.nrow b { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.nrow span { display: block; color: var(--muted); font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nbar { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); margin-bottom: 6px; }
+.nbar .r { display: flex; gap: var(--s-4); align-items: center; }
+input.nin { width: 100%; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.02em; padding: 6px 0; outline: none; }
+textarea.nbody { width: 100%; border: 0; background: none; color: var(--ink); font: inherit; line-height: 1.5; resize: none; outline: none; padding: 4px 0; }
+.nmeta { text-align: center; color: var(--muted); font-size: var(--fs-sm); margin: 8px 0; }
+.nitem { display: flex; align-items: center; gap: var(--s-3); padding: 2px 0; }
+.nitem input { flex: 1; min-width: 0; border: 0; background: none; color: var(--ink); font: inherit; outline: none; padding: 8px 0; }
+.nitem.done input { color: var(--muted); text-decoration: line-through; }
+.board { display: flex; gap: var(--s-3); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--s-2); margin-top: var(--s-3); }
+.bcol { flex: 0 0 82%; max-width: 320px; scroll-snap-align: start; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-3); }
+.bcol h3 { margin: 0 0 6px; }
+.bcard { border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px 10px 6px; margin-bottom: var(--s-2); background: var(--soft); }
+/* touch targets: grow the hit area to 44px without changing the layout */
+.lnk, .chk, .dot, .chip, .btn.sm, .seg button { position: relative; }
+.lnk::after, .chk::after, .dot::after, .chip::after, .btn.sm::after, .seg button::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--hit)); height: max(100%, var(--hit)); transform: translate(-50%, -50%); }
+.btn, .field, form input:not([type=checkbox]), form select { min-height: var(--hit); }
+/* utilities replace repeated inline styles */
+.u-mt2 { margin-top: var(--s-2); } .u-mt3 { margin-top: var(--s-3); } .u-mt4 { margin-top: var(--s-4); }
+.u-blk { display: block; } .u-mw0 { min-width: 0; } .u-aic { align-items: center; } .u-bgcard { background: var(--card); } .u-fw5 { font-weight: 500; }
+.u-ttl { font-weight: 600; font-size: var(--fs-base); overflow-wrap: anywhere; }
+.tagp { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: var(--r-xs); padding: 2px 6px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+.tagp.h { background: var(--bad-soft); color: var(--bad); } .tagp.m { background: var(--warn-soft); color: var(--warn); } .tagp.ok { background: var(--ok-soft); color: var(--ok); } .tagp.b { background: var(--brand-soft); color: var(--brand-deep); }
+.sample { font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; background: var(--warn-soft); color: var(--warn); border-radius: var(--r-xs); padding: 2px 6px; }
+/* list rows */
+.li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; }
+.li:first-of-type { border-top: 0; padding-top: 0; }
+.li:last-child { padding-bottom: 0; }
+.li > .nm { grid-column: 2; font-weight: 500; overflow-wrap: anywhere; text-align: left; background: none; border: 0; padding: 0; }
+.li.two > .nm { grid-column: 1 / 3; }
+.li .sub { grid-column: 2 / 4; font-size: var(--fs-sm); color: var(--muted); }
+.li.two .sub { grid-column: 1 / 4; }
+.li.done .nm { text-decoration: line-through; color: var(--muted); }
+.chk { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--muted); background: transparent; padding: 0; color: var(--brand-ink); font-size: var(--fs-md); line-height: 1; }
+.li.done .chk, .chk.on { background: var(--brand); border-color: var(--brand); }
+.bad { color: var(--bad); font-weight: 600; }
+.day { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 2px; display: flex; justify-content: space-between; }
+.day:first-child { margin-top: 0; }
+.bar { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--brand); border-radius: 4px; }
+.bar i.over { background: var(--warn); } .bar i.good { background: var(--ok); }
+.ex { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding: 10px 0; border-top: 1px solid var(--line); width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; font-variant-numeric: tabular-nums; }
+.ex:first-of-type { border-top: 0; padding-top: 0; }
+.ex .l { min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+.ex .r { font-weight: 600; flex: none; }
+.ex .r.inc { color: var(--ok); }
+.cat { display: grid; grid-template-columns: 78px 1fr auto; gap: var(--s-3); align-items: center; font-size: var(--fs-md); padding: 5px 0; font-variant-numeric: tabular-nums; }
+/* habits */
+.hb { padding: 10px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.hb:first-of-type { border-top: 0; padding-top: 0; }
+.dots { display: flex; gap: 5px; }
+.dot { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); background: transparent; padding: 0; }
+.dot.on { background: var(--brand); border-color: var(--brand); }
+.dot.today { outline: 1.5px solid var(--muted); outline-offset: 2px; }
+.heat { display: grid; grid-template-columns: repeat(13, 1fr); grid-template-rows: repeat(7, auto); grid-auto-flow: column; gap: 3px; margin: 12px 0 6px; }
+.hc { aspect-ratio: 1; border: 0; border-radius: 3px; background: var(--soft); padding: 0; min-width: 0; }
+.hc.on { background: var(--brand); } .hc.blank { background: transparent; pointer-events: none; }
+.hc.today { outline: 1.5px solid var(--ink); outline-offset: 1px; }
+.hhead { display: flex; justify-content: space-between; align-items: start; gap: var(--s-2); }
+/* charts */
+svg.chart { width: 100%; height: auto; display: block; }
+.chart .b { fill: var(--brand); } .chart .b.t { fill: var(--ink); } .chart .ax { stroke: var(--line); stroke-width: 1; }
+.chart text { fill: var(--muted); font: 10px var(--f); } .chart .ln { stroke: var(--brand); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; } .chart .pt { fill: var(--brand); }
+.chart .tg { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 3 3; }
+/* calendar */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-1); text-align: center; }
+.cal .wd { font-size: var(--fs-xs); color: var(--muted); font-weight: 600; text-transform: uppercase; padding-bottom: 2px; }
+.cd { aspect-ratio: 1; border-radius: var(--r-sm); border: 0; background: transparent; padding: 0; display: grid; place-items: center; position: relative; font-variant-numeric: tabular-nums; min-width: 0; }
+.cd.has::after { content: ""; position: absolute; bottom: 5px; width: 4px; height: 4px; border-radius: 50%; background: var(--brand); }
+.cd.today { color: var(--brand-deep); font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--brand); }
+.cd.sel { background: var(--brand); color: var(--brand-ink); } .cd.sel.has::after { background: var(--brand-ink); }
+.cd.blank { pointer-events: none; }
+/* water, mood */
+.water { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.water .step { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); font-size: var(--fs-xl); line-height: 1; padding: 0; }
+.water .step.p { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.moods button { border: 1px solid var(--line); background: var(--soft); border-radius: var(--r-sm); padding: 8px 0; font-size: var(--fs-sm); font-weight: 500; }
+.moods button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.hours { display: flex; gap: var(--s-4); overflow-x: auto; padding-bottom: 6px; }
+.hours div { text-align: center; font-size: var(--fs-sm); flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hours b { display: block; font-size: var(--fs-base); color: var(--ink); }
+.fc { display: grid; grid-template-columns: 56px 1fr auto; gap: var(--s-3); padding: 9px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.fc:first-of-type { border-top: 0; padding-top: 0; }
+.wx { display: flex; align-items: center; gap: var(--s-4); } .wx .t { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -.04em; } .wx svg { width: 50px; height: 50px; flex: none; }
+/* apps grid */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.tilea { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-4); display: grid; gap: var(--s-3); min-width: 0; }
+.tilea b { font-size: var(--fs-md); font-weight: 600; display: block; letter-spacing: -.01em; } .tilea span.s { font-size: var(--fs-sm); color: var(--muted); display: block; overflow-wrap: anywhere; }
+.tilea.off { opacity: .55; }
+/* settings */
+.sw { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding: 10px 0; border-top: 1px solid var(--line); }
+.sw:first-of-type { border-top: 0; padding-top: 0; }
+.sw .l { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+.tg { width: 44px; height: 26px; border-radius: 13px; border: 0; background: var(--line); position: relative; flex: none; padding: 0; }
+.tg::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--white); transition: transform .15s; }
+.tg[aria-pressed="true"] { background: var(--brand); } .tg[aria-pressed="true"]::after { transform: translateX(18px); }
+.mv { display: flex; }
+.evdone .l { text-decoration: line-through; color: var(--muted); }
+.arow { display: flex; align-items: center; gap: var(--s-3); padding: 10px 0; border-top: 1px solid var(--line); }
+.arow:first-of-type { border-top: 0; padding-top: 0; }
+.arow:last-child { padding-bottom: 0; }
+.ax { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; display: grid; gap: 1px; }
+.at { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.arow.off .at { color: var(--muted); }
+.dayset { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.dayset legend { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); padding: 0; margin-bottom: 6px; }
+.dayset label { position: relative; }
+.dayset input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; }
+.dayset span { display: block; padding: 7px 11px; border: 1px solid var(--line); border-radius: var(--r-pill); font-size: var(--fs-sm); font-weight: 500; background: var(--soft); }
+.dayset input:checked + span { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.dayset input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+.dayset .note { width: 100%; }
+.scrim.top { z-index: 100; align-items: center; padding: var(--s-4); }
+.ringbox { border-radius: 20px; text-align: center; max-width: 360px; padding-top: 22px; }
+.rtime { font-size: var(--fs-display); font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; line-height: 1; }
+.ringbox h2 { justify-content: center; }
+.pals { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--s-2); }
+.pal { display: flex; align-items: center; gap: var(--s-3); background: var(--soft); border: 1.5px solid var(--line); border-radius: var(--r-md); padding: var(--s-3); font-weight: 500; text-align: left; }
+.pal[aria-pressed="true"] { border-color: var(--brand); font-weight: 600; }
+.sw3 { display: flex; } .sw3 i { width: 14px; height: 22px; display: block; border: 1px solid var(--line); } .sw3 i:first-child { border-radius: var(--r-xs) 0 0 6px; } .sw3 i:last-child { border-radius: 0 6px 6px 0; }
+/* nav and sheet */
+nav { position: sticky; bottom: 0; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); background: var(--card); border-top: 1px solid var(--line); display: flex; align-items: center; padding: 0 8px env(safe-area-inset-bottom, 0px); }
+nav a { flex: 1; padding: 10px 0 8px; color: var(--muted); font-size: var(--fs-xs); font-weight: 500; display: grid; gap: 2px; justify-items: center; }
+nav a[aria-current="page"] { color: var(--brand-deep); font-weight: 600; }
+nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fab { flex: none; width: 52px; height: 52px; border-radius: 16px; border: 0; background: var(--brand); display: grid; place-items: center; margin: -18px 6px 0; box-shadow: 0 4px 12px rgba(10, 17, 30, .22); padding: 0; }
+.fab svg { width: 24px; height: 24px; stroke: var(--brand-ink); fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.scrim { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+.sheet { background: var(--card); width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 8px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: var(--s-3); }
+.grab { width: 38px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 2px; }
+.sheet h2 { margin: 0; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.02em; display: flex; justify-content: space-between; align-items: center; }
+.qa { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+.qa button { display: flex; align-items: center; gap: var(--s-3); background: var(--soft); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-3); font-weight: 500; text-align: left; }
+.sheet form { display: grid; gap: var(--s-3); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+@media (prefers-reduced-motion: reduce) { .tg::after { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="topbar" id="top"></div>
+  <div id="head"></div>
+  <main id="main"></main>
+  <nav aria-label="Main">
+    <a id="n-home" href="#"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg>Home</a>
+    <a id="n-apps" href="#apps"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>Widgets</a>
+    <button class="fab" data-act="new" data-type="menu" aria-label="Quick add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <a id="n-ins" href="#insights"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Insights</a>
+    <a id="n-set" href="#settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Settings</a>
+  </nav>
+</div>
+<div id="sheet"></div>
+<div id="ring"></div>
+
+<script>
+// Prototype: sample data, saved in this browser only (localStorage). The real app would use AsyncStorage the same way.
+const KEY = "lifedash-proto-v13";
+const CATS = ["Food", "Transport", "Bills", "Shopping", "Health", "Other"];
+const TITLES = { habits: "Habits", personal: "Personal tasks", office: "Office tasks", spend: "Money", goals: "Goals", journal: "Journal", watch: "Watchlist", notes: "Notes", learn: "Learning", proj: "Projects", health: "Health", calendar: "Calendar", alarms: "Alarms", dates: "Yearly dates", bills: "Bills", shop: "Shopping list", weather: "Weather" };
+const ORDER0 = ["habits", "personal", "office", "calendar", "alarms", "dates", "spend", "goals", "learn", "proj", "health", "journal", "notes", "watch", "bills", "shop", "weather"];
+const BLURB = { habits: "Streaks and 12-week history", personal: "Home and life admin", office: "Work to-dos", calendar: "Events and agenda", alarms: "Alarms and event alerts",dates: "Birthdays and anniversaries",spend: "Spending, income, budget", goals: "Targets with progress logs", health: "Water, sleep, weight", journal: "Daily notes and mood", watch: "Movies and series to watch", notes: "Folders, checklists and reminders", learn: "Courses, books and study log", proj: "Side projects with tasks",bills: "Due dates and paid status", shop: "Groceries and errands", weather: "Forecast (sample)" };
+const MOODS = ["", "Rough", "Low", "Okay", "Good", "Great"];
+const ICON = {
+  habits: '<path d="M5 13l4 4L19 7"/>', personal: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>', office: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2"/>',
+  spend: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>', goals: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>', journal: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6"/>',
+  health: '<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>', calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  learn: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>',
+  proj: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  notes: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
+  watch: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M16 5v14M3 10h5M16 10h5M3 14h5M16 14h5"/>',
+  alarms: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  dates: '<rect x="3" y="9" width="18" height="4" rx="1"/><path d="M5 13v7h14v-7M12 9v11M12 9C9 9 8 6 10 5s2 3 2 4c0-1 0-5 2-4s1 4-2 4"/>',
+  bills: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  shop: '<path d="M5 6h15l-2 9H7zM5 6L4 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/>', weather: '<circle cx="9" cy="9" r="4"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9-1"/>'
+};
+const icon = (k) => `<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg></span>`;
+
+/* ---------- dates and formats ---------- */
+const pad = (n) => String(n).padStart(2, "0");
+function key(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function ago(n) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - n); return d; }
+const dk = (n) => key(ago(-n));
+const fromKey = (k) => new Date(k + "T12:00:00");
+const TODAY = key(ago(0)), YEST = key(ago(1)), MONTH = TODAY.slice(0, 7);
+function dl(k) { return k === TODAY ? "Today" : k === YEST ? "Yesterday" : k === dk(1) ? "Tomorrow" : fromKey(k).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); }
+function agoTxt(k) { const n = Math.round((fromKey(TODAY) - fromKey(k)) / 864e5); return n === 0 ? "today" : n === 1 ? "yesterday" : n + " days ago"; }
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const $ = (id) => document.getElementById(id);
+const money = (n) => (n < 0 ? "-" : "") + S.cur + Math.round(Math.abs(n)).toLocaleString(S.cur === "₹" ? "en-IN" : "en-US");
+const num = (n) => (Math.round(n * 10) / 10).toLocaleString();
+
+/* ---------- data ---------- */
+function seed() {
+  const S = { nid: 100, name: "Koushik", cur: "₹", theme: "dark", pv: 2, palette: "orange", order: ORDER0.slice(), on: {}, budget: 30000, waterTarget: 8, habits: [], personal: [], office: [], spend: [], goals: [], journal: [], events: [], watch: [], notes: [], learn: [], proj: [], nfold: ["Notes", "Work", "Personal", "Ideas", "Travel", "Learning"], alarms: [], fired: {}, snz: [], alerts: { on: 1, lead: 15 }, dates: [], bills: [], shop: [], weight: [], health: { water: {}, sleep: {} } };
+  ORDER0.forEach((k) => { S.on[k] = 1; });
+  const id = () => S.nid++;
+  [["Walk 20 minutes", "07:00"], ["Read 10 pages", "21:30"], ["Drink 2L water", ""], ["Stretch", "08:00"]].forEach((r, h) => {
+    const done = {};
+    for (let i = 0; i < 84; i++) if ((i * 7 + h * 3) % 5 !== 0 && (i + h * 2) % 9 !== 0 && !(i < 2 && h === 2)) done[key(ago(i))] = 1;
+    S.habits.push({ id: id(), n: r[0], rt: r[1], done });
+  });
+  const T = (list, rows) => rows.forEach((r) => {
+    const t = { id: id(), t: r[0], p: r[1], due: r[2] === null ? "" : r[2], c: key(ago(r[3])), x: r[4] === null ? 0 : 1, f: r[4] === null ? null : key(ago(r[4])), cal: r[5] ? "1" : "", time: r[6] || "" };
+    list.push(t); if (t.cal) syncTaskEvent(t, list === S.office ? "office" : "personal", S);
+  });
+  T(S.personal, [["Renew car insurance", "h", key(ago(1)), 6, null], ["Pay electricity bill", "h", dk(1), 3, null, 1, ""], ["Book dentist", "m", dk(3), 5, null], ["Plan weekend trip", "l", "", 2, null], ["Call mom", "m", TODAY, 4, 0], ["Buy birthday gift", "m", "", 8, 2], ["Fix bike tyre", "l", "", 12, 10]]);
+  T(S.office, [["Send invoice to client", "h", TODAY, 2, null, 1, "16:00"], ["Prepare Monday standup notes", "m", dk(2), 1, null], ["Draft Q4 roadmap", "m", dk(6), 4, null], ["Review pull request", "m", "", 3, 0], ["Update project roadmap", "l", "", 7, 4], ["Submit expense report", "m", "", 11, 8]]);
+  [[120, "Lunch", "Food", 0], [45, "Auto fare", "Transport", 0], [180, "Dinner", "Food", 1], [350, "Coffee with friends", "Food", 2], [2300, "Groceries", "Food", 3], [90, "Auto fare", "Transport", 4], [1200, "T-shirt", "Shopping", 5], [60, "Metro card top-up", "Transport", 6], [210, "Lunch", "Food", 7], [640, "Pharmacy", "Health", 8], [899, "Internet", "Bills", 9], [75, "Auto fare", "Transport", 10], [420, "Movie", "Other", 11], [1499, "Phone recharge", "Bills", 12], [2100, "Shoes", "Shopping", 14], [1650, "Groceries", "Food", 16], [300, "Haircut", "Other", 18], [999, "Electricity", "Bills", 20]]
+    .forEach((r) => S.spend.push({ id: id(), k: "x", a: r[0], l: r[1], c: r[2], d: key(ago(r[3])) }));
+  S.spend.push({ id: id(), k: "i", a: 8000, l: "Freelance payment", c: "Other", d: key(ago(4)) }, { id: id(), k: "i", a: 45000, l: "Salary", c: "Other", d: key(ago(8)) });
+  S.goals.push({ id: id(), t: "Save for a laptop", target: 60000, cur: 24500, unit: S.cur, due: dk(70), log: [{ d: key(ago(20)), v: 10000 }, { d: key(ago(8)), v: 9500 }, { d: key(ago(2)), v: 5000 }] },
+    { id: id(), t: "Read 12 books", target: 12, cur: 5, unit: "books", due: dk(50), log: [{ d: key(ago(30)), v: 3 }, { d: key(ago(10)), v: 2 }] },
+    { id: id(), t: "Run 100 km", target: 100, cur: 38, unit: "km", due: dk(25), log: [{ d: key(ago(9)), v: 22 }, { d: key(ago(3)), v: 16 }] });
+  [[0, 4, "Good focus day. Finished the roadmap draft before lunch and walked in the evening."], [1, 3, "Busy meetings, skipped stretching."], [2, 5, "Long call with mom. Cooked dinner."], [4, 2, "Slept badly, felt slow all day."], [5, 4, "Weekend trip planning. Read for an hour."], [7, 3, ""], [9, 4, "Started the new reading habit."]]
+    .forEach((r) => S.journal.push({ id: id(), d: key(ago(r[0])), mood: r[1], txt: r[2] }));
+  [[0, "10:30", "Team standup", "Office"], [1, "17:00", "Dentist appointment", "Personal"], [3, "19:30", "Mom's birthday dinner", "Personal"], [5, "11:00", "Quarterly review", "Office"], [9, "06:15", "Flight to Kolkata", "Personal"], [-2, "15:00", "Design sync", "Office"]]
+    .forEach((r) => S.events.push({ id: id(), d: dk(r[0]), time: r[1], t: r[2], cat: r[3] }));
+  [
+    { t: "Dune: Part Two", type: "Movie", plat: "Prime Video", st: "todo", plan: dk(2), note: "Movie night with friends" },
+    { t: "Oppenheimer", type: "Movie", plat: "Netflix", st: "todo" },
+    { t: "Panchayat", type: "Series", plat: "Prime Video", st: "doing", se: 3, ep: 4 },
+    { t: "Breaking Bad", type: "Series", plat: "Netflix", st: "todo", note: "Everyone recommends it" },
+    { t: "Interstellar", type: "Movie", plat: "Prime Video", st: "done", rate: 5, f: key(ago(2)) },
+    { t: "Inception", type: "Movie", plat: "Netflix", st: "done", rate: 5, f: key(ago(6)) },
+    { t: "Money Heist", type: "Series", plat: "Netflix", st: "done", rate: 4, f: key(ago(20)) }
+  ].forEach((w) => S.watch.push(Object.assign({ id: id(), plat: "", se: "", ep: "", rate: 0, plan: "", note: "", c: key(ago(5)), f: null }, w)));
+  [
+    { h: 3, t: "Weekend trip ideas", lab: "Travel", pin: 1, body: "Goa in December, Pondicherry for a long weekend, or a Coorg road trip.\nCheck train tickets 60 days ahead." },
+    { h: 5, t: "Team meeting talking points", lab: "Work", pin: 1, body: "Release status, QA blockers, hiring update, next sprint scope.", rem: dk(2) },
+    { h: 20, t: "Groceries for Sunday", lab: "Personal", items: [["Paneer", 0], ["Spinach", 0], ["Curd", 1], ["Rice 5 kg", 0]] },
+    { h: 24 * 5, t: "Book to read next", lab: "Learning", body: "Atomic Habits, Deep Work, The Psychology of Money." },
+    { h: 0.2, t: "Call plumber", lab: "Personal", body: "Kitchen tap is leaking. Ask for a visit this week." },
+    { h: 24 * 40, t: "Gift ideas for mom", lab: "Personal", body: "Saree, a book, a spa voucher." },
+    { h: 24 * 18, t: "App idea: widget home", lab: "Ideas", body: "One home screen that mixes habits, tasks, money and notes. Everything on device." },
+    { h: 24 * 2, t: "Old shopping list", lab: "Notes", st: "trash", body: "Phone cover, charger, notebook." }
+  ].forEach((n) => S.notes.push({ id: id(), t: n.t, body: n.body || "", items: (n.items || []).map((r) => ({ t: r[0], x: r[1] })), lab: n.lab, pin: n.pin || 0, st: n.st || "on", rem: n.rem || "", m: Date.now() - n.h * 36e5, tr: n.st ? Date.now() - n.h * 36e5 : 0 }));
+  [
+    { t: "Complete Python course", kind: "Course", src: "Udemy", total: 60, done: 24, unit: "lessons", due: dk(30), days: [0, 1, 2, 4, 6], v: [3, 2, 4, 3, 2], m: [45, 30, 60, 40, 35] },
+    { t: "Atomic Habits", kind: "Book", src: "James Clear", total: 320, done: 140, unit: "pages", due: dk(14), days: [1, 3, 5], v: [25, 30, 20], m: [30, 40, 25] },
+    { t: "Guitar basics", kind: "Skill", src: "YouTube", total: 30, done: 9, unit: "practice sessions", due: "", days: [2, 5], v: [1, 1], m: [20, 25], note: "Practise chords C, G, Am and F" },
+    { t: "Intro to Economics", kind: "Course", src: "Coursera", total: 20, done: 20, unit: "lessons", due: "", st: "done", f: key(ago(10)), days: [10, 12], v: [3, 3], m: [50, 45] }
+  ].forEach((l) => S.learn.push({ id: id(), t: l.t, kind: l.kind, src: l.src, total: l.total, done: l.done, unit: l.unit, due: l.due, st: l.st || "active", f: l.f || null, note: l.note || "", log: l.days.map((n, i) => ({ d: key(ago(n)), v: l.v[i], m: l.m[i] })) }));
+  [
+    { t: "Portfolio website", st: "active", pr: "h", cat: "Creative", start: key(ago(14)), due: dk(21), desc: "A personal site with my projects, a short blog and a contact form.",
+      tasks: [["Design the layout", 1, "h", ""], ["Build the home page", 1, "h", ""], ["Write the about page", 0, "m", key(ago(1))], ["Add project pages", 0, "m", dk(7)], ["Deploy and connect domain", 0, "h", dk(18)]],
+      ms: [["Design approved", 1, key(ago(8))], ["Site live on a test link", 0, dk(10)], ["Public launch", 0, dk(21)]],
+      ups: [[3, "Picked the colours and fonts"], [1, "Home page done, working on mobile layout"]], time: [[0, 1.5, "About page draft"], [1, 2, "Mobile layout"], [3, 2.5, "Design"], [5, 1, "Fonts and colours"]],
+      links: [["Design file", "https://example.com/design"], ["GitHub repo", "https://github.com/"]] },
+    { t: "Life Dashboard app", st: "active", pr: "m", cat: "Tech", start: key(ago(5)), due: dk(45), desc: "Mobile app with widgets for habits, tasks, money and notes.",
+      tasks: [["Finish the design preview", 1, "h", ""], ["Write the spec", 0, "m", dk(3)], ["Set up Expo project", 0, "m", dk(10)], ["Build the first widgets", 0, "m", dk(30)]],
+      ms: [["Design preview signed off", 1, key(ago(1))], ["First build on phone", 0, dk(25)]], ups: [[2, "Preview has most widgets now"]], time: [[2, 3, "Preview widgets"], [4, 2, "Research"]], links: [] },
+    { t: "Home workout plan", st: "idea", pr: "l", cat: "Health", start: "", due: "", desc: "A simple 4 day plan using only dumbbells.", tasks: [], ms: [], ups: [], time: [], links: [] },
+    { t: "Learn to cook 10 recipes", st: "hold", pr: "l", cat: "Home", start: "", due: "", desc: "", tasks: [["Pick 10 recipes", 1, "m", ""], ["Buy basic spices", 0, "l", ""], ["Cook the first one", 0, "m", ""]], ms: [], ups: [], time: [], links: [] },
+    { t: "Organise photos", st: "done", pr: "m", cat: "Home", start: key(ago(40)), due: key(ago(10)), desc: "Sort the last 3 years into albums.", tasks: [["Back up to the cloud", 1, "m", ""], ["Delete duplicates", 1, "m", ""], ["Make yearly albums", 1, "m", ""]], ms: [["All backed up", 1, key(ago(20))]], ups: [[12, "All sorted"]], time: [[15, 2, "Backup"], [14, 3, "Albums"]], links: [] }
+  ].forEach((p) => S.proj.push({ id: id(), t: p.t, desc: p.desc, st: p.st, pr: p.pr, cat: p.cat, start: p.start, due: p.due, c: key(ago(10)), tasks: p.tasks.map((r) => ({ id: id(), t: r[0], x: r[1], p: r[2], due: r[3], f: r[1] ? key(ago(2)) : null })), ms: p.ms.map((r) => ({ id: id(), t: r[0], x: r[1], due: r[2] })), ups: p.ups.map((r) => ({ d: key(ago(r[0])), t: r[1] })), time: p.time.map((r) => ({ id: id(), d: key(ago(r[0])), h: r[1], t: r[2] })), links: p.links.map((r) => ({ id: id(), t: r[0], u: r[1] })) }));
+  [["06:30", "Wake up", [0, 1, 2, 3, 4], 5, 1], ["21:00", "Take medicine", [], 10, 1], ["08:30", "Weekend lie-in", [5, 6], 10, 0]]
+    .forEach((r) => S.alarms.push({ id: id(), t: r[0], label: r[1], days: r[2], snooze: r[3], on: r[4] }));
+  [["Aanya's birthday", "Birthday", 0, 1999, 7], ["Rahul's birthday", "Birthday", 1, 1996, 1], ["Mom's birthday", "Birthday", 4, 1968, 7], ["Wedding anniversary", "Anniversary", 21, 2019, 14], ["Dad's birthday", "Birthday", 90, 1965, 7], ["First day at work", "Other", 150, 2022, 3]]
+    .forEach((r) => S.dates.push({ id: id(), n: r[0], kind: r[1], d: r[3] + dk(r[2]).slice(4), hy: "1", rem: r[4] }));
+  [["Rent", 12000, 1, MONTH], ["Gym", 1500, 5, MONTH], ["Internet", 899, 9, MONTH], ["Netflix", 199, 15, ""], ["Electricity", 999, 20, ""], ["Phone plan", 499, 24, ""]]
+    .forEach((r) => {
+      const b = { id: id(), n: r[0], a: r[1], day: r[2], paid: r[3] }; S.bills.push(b);
+      if (r[3]) { S.spend = S.spend.filter((e) => !(e.l === b.n && e.c === "Bills")); S.spend.push({ id: id(), k: "x", a: b.a, l: b.n, c: "Bills", d: billDue(b) < TODAY ? billDue(b) : TODAY, bid: b.id }); }
+    });
+  [["Milk", "2 L"], ["Eggs", "12"], ["Bread", ""], ["Tomatoes", "1 kg"], ["Coffee beans", "250 g"]].forEach((r) => S.shop.push({ id: id(), t: r[0], q: r[1], x: 0 }));
+  for (let i = 0; i < 7; i++) { S.health.water[key(ago(i))] = [5, 8, 7, 6, 8, 4, 7][i]; S.health.sleep[key(ago(i + 1))] = [7.2, 6.5, 7.8, 5.9, 7.0, 8.1, 6.8][i]; }
+  [[28, 71.8], [21, 71.5], [14, 71.2], [7, 71.4], [1, 70.9]].forEach((r) => S.weight.push({ id: id(), d: key(ago(r[0])), v: r[1] }));
+  return S;
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+if (!S || !S.habits || !S.order) S = seed();
+S.order = S.order.filter((k) => TITLES[k]); delete S.focus; if (S.on) delete S.on.focus; // the Focus timer widget was removed
+if (S.notes) S.notes = S.notes.filter((n) => n.st !== "trash" || Date.now() - n.tr < 30 * 864e5); // Recently Deleted keeps notes for 30 days
+if (S.pv !== 2) { S.pv = 2; S.theme = "dark"; S.palette = "orange"; } // one-time move to the black Orange default
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+// Palettes: l = light tokens, d = dark tokens. Status colours (ok, warn, bad) stay shared.
+const KEYS = ["bg", "card", "soft", "ink", "muted", "line", "brand", "brand-ink", "brand-soft", "brand-deep", "panel", "panel-2", "panel-text", "panel-strong", "panel-line", "ring"];
+const mk = (a) => Object.fromEntries(KEYS.map((k, i) => [k, a[i]]));
+const PAL = {
+  orange: { name: "Orange", l: mk(["#f5f2ec", "#ffffff", "#efeae1", "#17181c", "#5b5f6a", "#e4dfd5", "#c8381f", "#ffffff", "#fbe6e0", "#8e2413", "#17181c", "#22242a", "#9ca0ab", "#e7e8ec", "#2a2c33", "#ec6850"]), d: mk(["#141417", "#1c1d22", "#25272d", "#f1efea", "#a3a6af", "#2c2e35", "#c8381f", "#ffffff", "#3a1e18", "#ec6850", "#0f1013", "#1a1b20", "#a3a6af", "#f1efea", "#26282e", "#ec6850"]) },
+  blue: { name: "Blue", l: mk(["#e6ebf4", "#ffffff", "#eef2f8", "#172335", "#556278", "#d3dae6", "#315bea", "#ffffff", "#dde7fb", "#2748c4", "#152237", "#1c2a40", "#bdc8da", "#e3e9f4", "#324058", "#7696f5"]), d: mk(["#0e1625", "#152237", "#1c2a40", "#e3e9f4", "#91a1bb", "#263650", "#315bea", "#ffffff", "#1b2a55", "#adc0ff", "#0a111e", "#131e32", "#bdc8da", "#e3e9f4", "#25354f", "#7696f5"]) },
+  green: { name: "Forest", l: mk(["#eef3ef", "#ffffff", "#e7efe9", "#14231b", "#53645a", "#d2ddd5", "#0e7a5f", "#ffffff", "#d9f0e6", "#0a6049", "#11271e", "#19352a", "#b4cfc2", "#e4f2ea", "#2b4a3b", "#5fd3a8"]), d: mk(["#0c1511", "#12201a", "#19291f", "#e2f0e8", "#8fa89b", "#213629", "#0e7a5f", "#ffffff", "#12352a", "#5fd3a8", "#070e0b", "#0f1b15", "#b4cfc2", "#e2f0e8", "#1f3329", "#5fd3a8"]) },
+  violet: { name: "Violet", l: mk(["#f0eef8", "#ffffff", "#eae6f6", "#1c1732", "#615b7c", "#dcd7ee", "#6d4aff", "#ffffff", "#e8e2ff", "#5334d6", "#1d1740", "#271f54", "#c6c0e6", "#ece9fb", "#3a3270", "#a99bff"]), d: mk(["#121022", "#1b1733", "#241f45", "#ece9fb", "#9a94bd", "#2f2a57", "#6d4aff", "#ffffff", "#2a2260", "#b9adff", "#0b0918", "#15112c", "#c6c0e6", "#ece9fb", "#2b2559", "#a99bff"]) },
+  graphite: { name: "Graphite", l: mk(["#f3f4f6", "#ffffff", "#eceef1", "#111827", "#5b6472", "#dde0e5", "#1f2937", "#ffffff", "#e5e7eb", "#111827", "#111827", "#1f2937", "#c3c8d2", "#f3f4f6", "#374151", "#9ca3af"]), d: mk(["#0b0f14", "#121821", "#1a212c", "#eef0f3", "#98a1ae", "#252d3a", "#e5e7eb", "#111827", "#252d3a", "#e5e7eb", "#06080b", "#10151c", "#c3c8d2", "#eef0f3", "#252d3a", "#9ca3af"]) }
+};
+function applyTheme() {
+  const r = document.documentElement; if (S.theme === "system") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", S.theme);
+  const p = PAL[S.palette] || PAL.orange, css = (o) => Object.keys(o).map((k) => `--${k}:${o[k]}`).join(";");
+  let el = document.getElementById("pal"); if (!el) { el = document.createElement("style"); el.id = "pal"; document.head.appendChild(el); }
+  el.textContent = `:root{${css(p.l)}}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${css(p.d)};color-scheme:dark}}:root[data-theme="dark"]{${css(p.d)};color-scheme:dark}`;
+}
+
+const U = { confirm: "", sheet: null, tab: { personal: "open", office: "open" }, cat: "All", dkind: "All", ring: [], ltab: "active", pview: "list", pid: 0, pst: "All", pq: "", pmode: "list", psort: "due", nview: "folders", nfolder: "All", nq: "", nid: 0, nmenu: 0, wtab: "todo", wtype: "All", wq: "", pick: 0, q: "", tq: "", jq: "", cal: { y: new Date().getFullYear(), m: new Date().getMonth() }, day: TODAY };
+
+/* ---------- derived ---------- */
+function streaks(h) {
+  let s = h.done[TODAY] ? 0 : 1, cur = 0;
+  while (h.done[key(ago(s + cur))]) cur++;
+  let best = 0, run = 0;
+  for (let i = 400; i >= 0; i--) { if (h.done[key(ago(i))]) { run++; if (run > best) best = run; } else run = 0; }
+  let n30 = 0; for (let i = 0; i < 30; i++) if (h.done[key(ago(i))]) n30++;
+  return { cur, best, rate: Math.round(n30 / 30 * 100) };
+}
+const open = (l) => l.filter((t) => !t.x);
+const PR = { h: 0, m: 1, l: 2 };
+function sortOpen(a, b) { const x = a.due || "9999", y = b.due || "9999"; return x < y ? -1 : x > y ? 1 : PR[a.p] - PR[b.p]; }
+function dueTxt(t) { if (!t.due || t.x) return ""; const tm = t.cal && t.time ? " · " + t.time : ""; return t.due < TODAY ? `<span class="bad">Overdue · ${dl(t.due)}</span>` : t.due === TODAY ? "Due today" + tm : "Due " + dl(t.due) + tm; }
+// Tasks can be shown on the calendar: the linked event (event.tid) mirrors the task's title, date and time.
+function syncTaskEvent(t, k, st = S) {
+  let ev = st.events.find((e) => e.tid === t.id);
+  if (t.cal === "1" && t.due) {
+    if (!ev) { ev = { id: st.nid++, tid: t.id }; st.events.push(ev); }
+    Object.assign(ev, { tk: k, t: t.t, d: t.due, time: t.time || "", cat: k === "office" ? "Office" : "Personal" });
+  } else if (ev) st.events = st.events.filter((e) => e !== ev);
+}
+const taskOf = (e) => (S[e.tk] || []).find((t) => t.id === e.tid);
+// Yearly dates repeat every year on the same month and day (29 Feb falls on 28 Feb in non-leap years).
+function occ(x, year) { let md = x.d.slice(5); if (md === "02-29" && new Date(year, 1, 29).getMonth() !== 1) md = "02-28"; return year + "-" + md; }
+function nextOcc(x) { const y = Number(TODAY.slice(0, 4)); const k = occ(x, y); return k < TODAY ? occ(x, y + 1) : k; }
+const daysTo = (x) => Math.round((fromKey(nextOcc(x)) - fromKey(TODAY)) / 864e5);
+function dateLabel(x, year) {
+  const yrs = x.hy === "1" ? year - Number(x.d.slice(0, 4)) : 0;
+  if (x.kind === "Birthday") return yrs > 0 ? "Turns " + yrs : "Birthday";
+  return yrs > 0 ? yrs + (yrs === 1 ? " year" : " years") : x.kind === "Anniversary" ? "Anniversary" : "Yearly";
+}
+/* Alarms. In this preview they ring while the page is open; the real app schedules local notifications instead. */
+const hm = (d) => pad(d.getHours()) + ":" + pad(d.getMinutes());
+function dayTxt(d) { if (!d.length) return "Once"; if (d.length === 7) return "Every day"; if (d.join() === "0,1,2,3,4") return "Weekdays"; if (d.join() === "5,6") return "Weekends"; return d.map((i) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]).join(", "); }
+function untilTxt(ms) { const m = Math.max(1, Math.round(ms / 60000)); if (m < 60) return m + " min"; const h = Math.floor(m / 60); return h < 24 ? h + " h" + (m % 60 ? " " + (m % 60) + " min" : "") : Math.round(h / 24) + " days"; }
+function nextAlarm() {
+  const now = new Date(); let best = null;
+  S.alarms.forEach((a) => {
+    if (!a.on) return;
+    for (let i = 0; i < 8; i++) {
+      const d = new Date(now.getTime() + i * 864e5);
+      if (a.days.length && !a.days.includes((d.getDay() + 6) % 7)) continue;
+      const t = new Date(key(d) + "T" + a.t + ":00");
+      if (t > now) { if (!best || t < best.t) best = { t, a }; break; }
+    }
+  });
+  return best;
+}
+function alarmRows(L) {
+  return L.map((a) => `<div class="arow${a.on ? "" : " off"}"><button class="ax" ${edBtn("alarm", "", a.id)}><span class="at">${a.t}</span><span class="muted">${esc(a.label || "Alarm")} · ${dayTxt(a.days)}</span></button><button class="tg" data-act="aon" data-id="${a.id}" aria-pressed="${!!a.on}" aria-label="${esc(a.label || "Alarm")} at ${a.t}"></button></div>`).join("");
+}
+const nday = (n) => Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(n.m).setHours(0, 0, 0, 0)) / 864e5);
+const nstamp = (n) => { const k = nday(n), d = new Date(n.m); return k <= 0 ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : k < 7 ? d.toLocaleDateString([], { weekday: "long" }) : d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" }); };
+const ngroup = (n) => n.pin ? "Pinned" : nday(n) <= 0 ? "Today" : nday(n) === 1 ? "Yesterday" : nday(n) <= 7 ? "Previous 7 Days" : nday(n) <= 30 ? "Previous 30 Days" : new Date(n.m).toLocaleDateString([], { month: "long", year: "numeric" });
+const ntitle = (n) => n.t.trim() || "New Note";
+const nsnip = (n) => (n.body.split("\n").map((x) => x.trim()).find(Boolean)) || (n.items[0] ? "☐ " + n.items[0].t : "") || "No additional text";
+const nwords = (n) => (n.t + " " + n.body).split(/\s+/).filter(Boolean).length;
+const nrow = (n, folder) => `<button class="nrow" data-act="nedit" data-id="${n.id}"><b>${esc(ntitle(n))}</b><span>${n.rem && n.st === "on" ? "⏰ " : ""}${nstamp(n)}  ${esc(nsnip(n))}</span>${folder ? `<span>${esc(n.lab)}</span>` : ""}</button>`;
+function newNote() { const n = { id: S.nid++, t: "", body: "", items: [], lab: S.nfold.includes(U.nfolder) ? U.nfolder : "Notes", pin: 0, st: "on", rem: "", m: Date.now(), tr: 0 }; S.notes.unshift(n); U.nid = n.id; U.nview = "edit"; U.nmenu = 0; U.sheet = null; if (location.hash !== "#notes") location.hash = "notes"; }
+function openNote(id) { U.nid = Number(id); U.nview = "edit"; U.nmenu = 0; U.sheet = null; if (location.hash !== "#notes") location.hash = "notes"; }
+function noteInput(t) {
+  const n = byId(S.notes, U.nid); if (!n) return;
+  if (t.dataset.ni !== undefined) n.items[Number(t.dataset.ni)].t = t.value; else n[t.dataset.nf] = t.value;
+  if (t.dataset.nf === "body") t.rows = Math.max(8, t.value.split("\n").length + 2);
+  n.m = Date.now(); save();
+}
+const PST = [["idea", "Idea"], ["active", "In progress"], ["hold", "On hold"], ["done", "Done"]];
+const PTAG = { active: "b", idea: "", hold: "m", done: "ok" };
+const PCAT = ["Tech", "Creative", "Home", "Learning", "Health", "Money", "Other"];
+const PPR = { h: "High", m: "Medium", l: "Low" };
+const dnum = (k) => Math.round((fromKey(k) - fromKey(TODAY)) / 864e5);
+const dleft = (k) => { const n = dnum(k); return n < 0 ? Math.abs(n) + " days overdue" : n === 0 ? "due today" : n + " days left"; };
+const pPct = (p) => p.tasks.length ? Math.round(p.tasks.filter((t) => t.x).length / p.tasks.length * 100) : (p.st === "done" ? 100 : 0);
+const pOver = (p) => p.st === "done" ? [] : p.tasks.filter((t) => !t.x && t.due && t.due < TODAY);
+const pHours = (p, from) => p.time.filter((x) => !from || x.d >= from).reduce((a, x) => a + x.h, 0);
+function phealth(p) {
+  if (p.st === "done") return ["Done", "ok"];
+  if (p.st !== "active") return null;
+  if (p.due && p.due < TODAY) return ["Overdue", "h"];
+  if (pOver(p).length) return ["Late tasks", "m"];
+  if (!p.due) return null;
+  const pc = pPct(p), left = dnum(p.due), span = p.start && p.start < p.due ? Math.max(1, Math.round((fromKey(p.due) - fromKey(p.start)) / 864e5)) : 0;
+  const exp = span ? Math.min(100, Math.max(0, (span - left) / span * 100)) : null;
+  return (exp !== null ? pc + 15 < exp : left <= 7 && pc < 60) ? ["At risk", "m"] : ["On track", "ok"];
+}
+function projRow(p, board) {
+  const pc = pPct(p), nx = p.tasks.filter((t) => !t.x).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"))[0], hl = phealth(p);
+  const tags = (p.pr === "h" ? '<span class="tagp h">High</span> ' : "") + (hl && !board ? `<span class="tagp ${hl[1]}">${hl[0]}</span>` : "");
+  return `<button class="nrow" data-act="popen" data-id="${p.id}"><b>${esc(p.t)} ${tags}</b><span>${p.tasks.length ? pc + "% · " + p.tasks.filter((t) => t.x).length + "/" + p.tasks.length + " tasks" : "No tasks yet"}${p.due && p.st !== "done" ? " · " + dleft(p.due) : ""}</span>${nx && p.st !== "done" && !board ? `<span>Next: ${esc(nx.t)}</span>` : ""}<div class="u-mt2 bar"><i class="${pc >= 100 ? "good" : ""}" style="width:${pc}%"></i></div></button>`;
+}
+function lstreak() { const s = new Set(); S.learn.forEach((l) => l.log.forEach((x) => s.add(x.d))); let i = s.has(TODAY) ? 0 : 1, c = 0; while (s.has(key(ago(i)))) { c++; i++; } return c; }
+const lmin = (k) => S.learn.reduce((a, l) => a + l.log.filter((x) => x.d === k).reduce((b, x) => b + (x.m || 0), 0), 0);
+function learnCard(l) {
+  const p = Math.min(100, l.done / l.total * 100), left = l.due && l.st !== "done" ? dleft(l.due) : "";
+  const need = l.due && l.st === "active" && fromKey(l.due) > fromKey(TODAY) && l.done < l.total ? num((l.total - l.done) / Math.round((fromKey(l.due) - fromKey(TODAY)) / 864e5)) + " " + esc(l.unit) + " per day to finish on time" : "";
+  const mins = l.log.reduce((a, x) => a + (x.m || 0), 0);
+  let h = `<section class="card"><div class="hhead"><div class="u-mw0"><div class="u-ttl">${esc(l.t)} <span class="tagp">${esc(l.kind)}</span>${l.st === "paused" ? ' <span class="tagp m">Paused</span>' : ""}</div><div class="muted">${l.src ? esc(l.src) + " · " : ""}${num(l.done)} of ${num(l.total)} ${esc(l.unit)}${left ? " · " + left : ""}${l.st === "done" && l.f ? " · finished " + dl(l.f) : ""}</div></div><button class="lnk" ${edBtn("learn", "", l.id)}>Edit</button></div>`;
+  h += `<div class="bar" style="margin:12px 0 8px"><i class="${p >= 100 ? "good" : ""}" style="width:${p}%"></i></div><div class="u-aic row"><span class="muted">${Math.round(p)}%${need ? " · " + need : ""}${mins ? " · " + Math.floor(mins / 60) + "h " + (mins % 60) + "m studied" : ""}</span>${l.st === "done" ? "" : `<button class="btn sm" data-act="new" data-type="llog" data-ctx="${l.id}">Log session</button>`}</div>`;
+  if (l.note) h += `<p class="u-mt2 note">${esc(l.note)}</p>`;
+  if (l.log.length) h += '<h3 class="u-mt4">Recent sessions</h3>' + l.log.slice().sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 3).map((x) => `<div class="ex" style="padding:6px 0"><span class="muted">${dl(x.d)}${x.m ? " · " + x.m + " min" : ""}</span><span class="r">+${num(x.v)} ${esc(l.unit)}</span></div>`).join("");
+  return h + "</section>";
+}
+function watchRow(w, mini) {
+  const sub = [w.plat, w.type === "Series" && (w.se || w.ep) ? "S" + (w.se || 1) + " E" + (w.ep || 0) : "", w.st === "done" && w.rate ? "Rated " + w.rate + "/5" : "", w.plan && w.st !== "done" ? "Planned " + dl(w.plan) : ""].filter(Boolean).join(" · ");
+  const tag = w.st === "doing" ? '<span class="tagp ok">Watching</span>' : `<span class="tagp ${w.type === "Series" ? "b" : ""}">${w.type === "Series" ? "Series" : "Movie"}</span>`;
+  return `<div class="li${w.st === "done" ? " done" : ""}"><button class="chk" data-act="wtgl" data-id="${w.id}" aria-label="${w.st === "done" ? "Move back to the list" : "Mark watched"}: ${esc(w.t)}">${w.st === "done" ? "✓" : ""}</button><button class="nm" ${edBtn("watch", "", w.id)}>${esc(w.t)}</button>${tag}<span class="sub">${esc(sub) || "No details"}${!mini && w.type === "Series" && w.st !== "done" ? ` · <button class="lnk" data-act="wep" data-id="${w.id}">+1 episode</button>` : ""}</span></div>`;
+}
+const alertNote = () => (S.alerts.on ? `<p class="note">Events with a time ring ${S.alerts.lead} minutes before and at the start.</p>` : '<p class="note">Event alerts are off. Turn them on in Alarms.</p>');
+const inTxt = (n) => (n === 0 ? "Today" : n === 1 ? "Tomorrow" : "In " + n + " days");
+const datesOn = (k) => S.dates.filter((x) => occ(x, Number(k.slice(0, 4))) === k);
+function dateRow(x) {
+  const n = daysTo(x), nk = nextOcc(x);
+  return `<button class="ex" ${edBtn("date", "", x.id)}><span class="l">${esc(x.n)}<span class="u-blk muted">${fromKey(nk).toLocaleDateString(undefined, { day: "numeric", month: "short" })} · ${x.kind === "Other" ? "" : x.kind + " · "}${dateLabel(x, Number(nk.slice(0, 4)))}</span></span><span class="tagp ${n === 0 ? "ok" : n <= x.rem ? "m" : ""}">${inTxt(n)}</span></button>`;
+}
+function evRow(e, showDate) {
+  const t = e.tid ? taskOf(e) : null, done = !!(t && t.x);
+  return `<button class="ex${done ? " evdone" : ""}" ${edBtn("event", "", e.id)}><span class="l">${esc(e.t)}<span class="u-blk muted">${showDate ? dl(e.d) + " · " : ""}${e.time || "All day"}${t ? " · Task" : ""}</span></span><span class="tagp ${done ? "ok" : e.cat === "Office" ? "b" : ""}">${done ? "Done" : e.cat}</span></button>`;
+}
+const prTag = (t) => t.p === "h" ? '<span class="tagp h">High</span>' : t.p === "m" ? '<span class="tagp m">Med</span>' : '<span class="tagp">Low</span>';
+const spentOn = (k) => S.spend.filter((e) => e.k !== "i" && e.d === k).reduce((a, e) => a + e.a, 0);
+const inMonth = (e, kind) => e.d.slice(0, 7) === MONTH && (e.k === "i") === (kind === "i");
+const monthSum = (kind) => S.spend.filter((e) => inMonth(e, kind)).reduce((a, e) => a + e.a, 0);
+const water = (k) => S.health.water[k] || 0;
+function billDue(b) { const last = new Date(Number(MONTH.slice(0, 4)), Number(MONTH.slice(5)), 0).getDate(); return MONTH + "-" + pad(Math.min(b.day, last)); }
+function billState(b) { const d = billDue(b); if (b.paid === MONTH) return { t: "Paid", c: "ok", s: 9 }; if (d < TODAY) return { t: "Overdue", c: "h", s: 0 }; if (d === TODAY) return { t: "Due today", c: "m", s: 1 }; const n = Math.round((fromKey(d) - fromKey(TODAY)) / 864e5); return { t: "In " + n + "d", c: "", s: 2 }; }
+function tasksDone(k) { return S.personal.concat(S.office).filter((t) => t.x && t.f === k).length; }
+function score() {
+  const p = [], due = S.personal.concat(S.office).filter((t) => !t.x && t.due && t.due <= TODAY).length, td = tasksDone(TODAY);
+  if (S.habits.length) p.push(S.habits.filter((h) => h.done[TODAY]).length / S.habits.length);
+  p.push(Math.min(1, water(TODAY) / S.waterTarget));
+  if (due + td) p.push(td / (due + td));
+  return Math.round(p.reduce((a, b) => a + b, 0) / p.length * 100);
+}
+
+/* ---------- small chart + layout helpers ---------- */
+function bars(data, fmt, target) {
+  const mx = Math.max(1, target || 0, ...data.map((d) => d.v)), n = data.length, step = 336 / n, bw = Math.min(22, step - 6);
+  let s = `<svg class="chart" viewBox="0 0 336 124" role="img" aria-label="Bar chart, highest ${fmt(mx)}"><text x="0" y="10">${fmt(mx)}</text><line class="ax" x1="0" y1="14" x2="336" y2="14"/><line class="ax" x1="0" y1="100" x2="336" y2="100"/>`;
+  if (target) s += `<line class="tg" x1="0" x2="336" y1="${100 - target / mx * 84}" y2="${100 - target / mx * 84}"/>`;
+  data.forEach((d, i) => { const h = d.v / mx * 84; s += `<rect class="b${d.hi ? " t" : ""}" x="${i * step + (step - bw) / 2}" y="${100 - h}" width="${bw}" height="${h}" rx="3"/><text x="${i * step + step / 2}" y="114" text-anchor="middle">${d.l}</text>`; });
+  return s + "</svg>";
+}
+const lastDays = (n, f) => { const o = []; for (let i = n - 1; i >= 0; i--) { const k = key(ago(i)); o.push({ k, l: n > 8 ? fromKey(k).getDate() : fromKey(k).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2), v: f(k), hi: i === 0 }); } return o; };
+const stats = (a) => '<div class="stats">' + a.map((x) => `<div class="stat"><div class="big">${x[0]}</div><span class="muted">${x[1]}</span></div>`).join("") + "</div>";
+const card = (k, small, body) => `<section class="card"><h2><a href="#${k}">${icon(k)}${TITLES[k]}<span class="chev">›</span></a><small>${small}</small></h2>${body}</section>`;
+const pageCard = (title, small, body) => `<section class="card"><h2>${title}<small>${small || ""}</small></h2>${body}</section>`;
+const edBtn = (type, ctx, id) => `data-act="edit" data-type="${type}" data-ctx="${ctx}" data-id="${id}"`;
+
+/* ---------- form engine: one place that defines every add / edit form ---------- */
+const F = (n, l, t, o) => Object.assign({ n, l, t: t || "text" }, o);
+const PRIO = [["h", "High"], ["m", "Medium"], ["l", "Low"]];
+const TYPES = {
+  task: { name: "Task", L: (c) => S[c], f: () => [F("t", "Task", "text", { req: 1 }), F("p", "Priority", "sel", { o: PRIO, d: "m" }), F("due", "Due date", "date"), F("cal", "Calendar", "sel", { o: [["", "Not on calendar"], ["1", "Show on calendar on its due date"]], d: "" }), F("time", "Event time (optional)", "time")], def: () => ({ c: TODAY, x: 0, f: null, cal: "", time: "" }) },
+  habit: { name: "Habit", L: () => S.habits, f: () => [F("n", "Habit name", "text", { req: 1 }), F("rt", "Reminder time (optional)", "time")], def: () => ({ done: {} }) },
+  spend: { name: "Entry", L: () => S.spend, f: () => [F("k", "Type", "sel", { o: [["x", "Expense"], ["i", "Income"]], d: "x" }), F("a", "Amount", "num", { req: 1 }), F("l", "Description"), F("c", "Category", "sel", { o: CATS.map((c) => [c, c]), d: "Food" }), F("d", "Date", "date", { d: TODAY })], def: () => ({}) },
+  goal: { name: "Goal", L: () => S.goals, f: () => [F("t", "Goal", "text", { req: 1 }), F("target", "Target", "num", { req: 1 }), F("cur", "Progress so far", "num", { d: 0 }), F("unit", "Unit, e.g. km or books"), F("due", "Target date", "date")], def: () => ({ log: [] }) },
+  glog: { name: "Log progress", custom: 1, f: () => [F("v", "Amount to add", "num", { req: 1 }), F("d", "Date", "date", { d: TODAY })], save(v, ctx) { const g = byId(S.goals, ctx); g.cur += v.v; g.log.push({ d: v.d, v: v.v }); } },
+  journal: { name: "Journal entry", L: () => S.journal, f: () => [F("d", "Date", "date", { d: TODAY }), F("mood", "Mood", "sel", { o: [[1, "1 · Rough"], [2, "2 · Low"], [3, "3 · Okay"], [4, "4 · Good"], [5, "5 · Great"]], d: 3, n2: 1 }), F("txt", "What happened today?", "area")], def: () => ({}) },
+  event: { name: "Event", L: () => S.events, f: () => [F("t", "Title", "text", { req: 1 }), F("d", "Date", "date", { d: U.day, req: 1 }), F("time", "Time", "time", { d: "09:00" }), F("cat", "Type", "sel", { o: [["Personal", "Personal"], ["Office", "Office"], ["Other", "Other"]], d: "Personal" })], def: () => ({}) },
+  learn: { name: "Learning item", L: () => S.learn, f: () => [F("t", "What are you learning?", "text", { req: 1 }), F("kind", "Type", "sel", { o: [["Course", "Course"], ["Book", "Book"], ["Skill", "Skill or practice"], ["Video series", "Video series"]], d: "Course" }), F("src", "Platform or author (optional)"), F("total", "Total amount", "num", { req: 1 }), F("unit", "Unit, e.g. lessons or pages", "text", { d: "lessons" }), F("done", "Done so far", "num", { d: 0 }), F("due", "Finish by (optional)", "date"), F("st", "Status", "sel", { o: [["active", "In progress"], ["paused", "Paused"], ["done", "Finished"]], d: "active" }), F("note", "Note (optional)")], def: () => ({ log: [], f: null }) },
+  llog: { name: "Log session", custom: 1, f: () => [F("v", "Amount done (lessons, pages...)", "num", { req: 1 }), F("m", "Minutes studied", "num", { d: 0 }), F("d", "Date", "date", { d: TODAY })], save(v, ctx) { const g = byId(S.learn, ctx); g.done += v.v; g.log.push({ d: v.d, v: v.v, m: v.m }); if (g.done >= g.total) { g.st = "done"; g.f = v.d; } } },
+  proj: { name: "Project", L: () => S.proj, f: () => [F("t", "Project name", "text", { req: 1 }), F("desc", "What is it about? (optional)", "area"), F("cat", "Category", "sel", { o: PCAT.map((c) => [c, c]), d: "Tech" }), F("pr", "Priority", "sel", { o: [["h", "High"], ["m", "Medium"], ["l", "Low"]], d: "m" }), F("st", "Status", "sel", { o: PST.map((s) => [s[0], s[1]]), d: "active" }), F("start", "Start date (optional)", "date"), F("due", "Target date (optional)", "date")], def: () => ({ tasks: [], ms: [], ups: [], time: [], links: [], c: TODAY }) },
+  ptask: { name: "Project task", L: (c) => byId(S.proj, c).tasks, f: () => [F("t", "Task", "text", { req: 1 }), F("p", "Priority", "sel", { o: PRIO, d: "m" }), F("due", "Due date (optional)", "date")], def: () => ({ x: 0, f: null }) },
+  pms: { name: "Milestone", L: (c) => byId(S.proj, c).ms, f: () => [F("t", "Milestone", "text", { req: 1 }), F("due", "Date (optional)", "date")], def: () => ({ x: 0 }) },
+  ptime: { name: "Time spent", L: (c) => byId(S.proj, c).time, f: () => [F("h", "Hours", "num", { req: 1 }), F("d", "Date", "date", { d: TODAY }), F("t", "What did you work on? (optional)")], def: () => ({}) },
+  plink: { name: "Link", L: (c) => byId(S.proj, c).links, f: () => [F("t", "Label"), F("u", "Web address, starting with https://", "text", { req: 1 })], def: () => ({}) },
+  watch: { name: "Movie or series", L: () => S.watch, f: () => [F("t", "Title", "text", { req: 1 }), F("type", "Type", "sel", { o: [["Movie", "Movie"], ["Series", "Web series"]], d: "Movie" }), F("plat", "Where to watch", "sel", { o: [["", "Not set"], ["Netflix", "Netflix"], ["Prime Video", "Prime Video"], ["Disney+ Hotstar", "Disney+ Hotstar"], ["JioCinema", "JioCinema"], ["YouTube", "YouTube"], ["Cinema", "Cinema"], ["Other", "Other"]], d: "" }), F("st", "Status", "sel", { o: [["todo", "To watch"], ["doing", "Watching"], ["done", "Watched"]], d: "todo" }), F("se", "Season (series)", "num", { d: "" }), F("ep", "Episode reached (series)", "num", { d: "" }), F("rate", "Your rating", "sel", { o: [[0, "Not rated"], [1, "1 of 5"], [2, "2 of 5"], [3, "3 of 5"], [4, "4 of 5"], [5, "5 of 5"]], d: 0 }), F("plan", "Plan to watch on (optional)", "date"), F("note", "Note (optional)")], def: () => ({ c: TODAY, f: null }) },
+  alarm: { name: "Alarm", L: () => S.alarms, f: () => [F("t", "Time", "time", { req: 1, d: "07:00" }), F("label", "Label"), F("days", "Repeat", "days"), F("snooze", "Snooze for", "sel", { o: [[5, "5 minutes"], [10, "10 minutes"], [15, "15 minutes"]], d: 5 })], def: () => ({ on: 1 }) },
+  date: { name: "Yearly date", L: () => S.dates, f: () => [F("n", "Name or occasion", "text", { req: 1 }), F("kind", "Type", "sel", { o: [["Birthday", "Birthday"], ["Anniversary", "Anniversary"], ["Other", "Other"]], d: "Birthday" }), F("d", "Date", "date", { req: 1, d: TODAY }), F("hy", "Year", "sel", { o: [["1", "Year is known (show age or years)"], ["", "Ignore the year"]], d: "1" }), F("rem", "Remind me", "sel", { o: [[0, "On the day"], [1, "1 day before"], [3, "3 days before"], [7, "1 week before"], [14, "2 weeks before"]], d: 3 })], def: () => ({}) },
+  bill: { name: "Bill", L: () => S.bills, f: () => [F("n", "Bill name", "text", { req: 1 }), F("a", "Amount", "num", { req: 1 }), F("day", "Due day of month (1-31)", "num", { req: 1, d: 1 })], def: () => ({ paid: "" }) },
+  shop: { name: "Item", L: () => S.shop, f: () => [F("t", "Item", "text", { req: 1 }), F("q", "Quantity (optional)")], def: () => ({ x: 0 }) },
+  weight: { name: "Weight (kg)", L: () => S.weight, f: () => [F("v", "Weight in kg", "num", { req: 1 }), F("d", "Date", "date", { d: TODAY })], def: () => ({}) },
+  sleep: { name: "Sleep", custom: 1, f: () => [F("h", "Hours slept", "num", { req: 1 }), F("d", "Night ending on", "date", { d: TODAY })], save(v) { S.health.sleep[v.d] = v.h; } }};
+const byId = (list, id) => list.find((x) => x.id === Number(id));
+function fieldHtml(f, item) {
+  let v = item && item[f.n] !== undefined && item[f.n] !== null ? item[f.n] : f.d !== undefined ? f.d : "";
+  if (f.t === "days") {
+    const on = (item && item.days) || [];
+    return `<fieldset class="dayset"><legend>${f.l}</legend>${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((n, i) => `<label><input type="checkbox" name="days" value="${i}"${on.includes(i) ? " checked" : ""}><span>${n}</span></label>`).join("")}<p class="note">Leave all unchecked to ring once.</p></fieldset>`;
+  }
+  const id = "f-" + f.n, nm = `name="${f.n}" id="${id}"`;
+  let ctl;
+  if (f.t === "sel") ctl = `<select ${nm}>${f.o.map((o) => `<option value="${o[0]}"${String(o[0]) === String(v) ? " selected" : ""}>${esc(o[1])}</option>`).join("")}</select>`;
+  else if (f.t === "area") ctl = `<textarea ${nm} maxlength="600">${esc(v)}</textarea>`;
+  else if (f.t === "num") ctl = `<input ${nm} type="number" step="any" inputmode="decimal" value="${esc(v)}"${f.req ? " required" : ""}>`;
+  else ctl = `<input ${nm} type="${f.t}" value="${esc(v)}" maxlength="80"${f.req ? " required" : ""}>`;
+  return `<label class="f">${f.l}${ctl}</label>`;
+}
+function sheetHtml() {
+  const s = U.sheet; if (!s) return "";
+  let inner;
+  if (s.type === "menu") {
+    const qa = [["task", "personal", "Personal task", "personal"], ["task", "office", "Office task", "office"], ["spend", "", "Expense or income", "spend"], ["event", "", "Event", "calendar"], ["date", "", "Yearly date", "dates"], ["alarm", "", "Alarm", "alarms"], ["note", "", "Note", "notes"], ["learn", "", "Learning item", "learn"], ["proj", "", "Project", "proj"], ["watch", "", "Movie or series", "watch"], ["journal", "", "Journal entry", "journal"], ["shop", "", "Shopping item", "shop"], ["habit", "", "New habit", "habits"], ["goal", "", "New goal", "goals"], ["sleep", "", "Log sleep", "health"], ["weight", "", "Log weight", "health"]];
+    inner = `<h2>Quick add<button class="lnk" data-act="close">Close</button></h2><div class="qa">${qa.map((q) => `<button data-act="new" data-type="${q[0]}" data-ctx="${q[1]}">${icon(q[3])}${q[2]}</button>`).join("")}<button data-act="water" data-d="1">${icon("health")}Water +1</button></div>`;
+  } else {
+    const T = TYPES[s.type], item = s.id ? (T.custom ? null : byId(T.L(s.ctx), s.id)) : null;
+    const name = s.type === "task" ? (s.ctx === "office" ? "Office task" : "Personal task") : T.name;
+    inner = `<h2>${s.id ? "Edit " + name.toLowerCase() : T.custom ? name : "New " + name.toLowerCase()}<button class="lnk" data-act="close">Cancel</button></h2>` +
+      `<form data-form="sheet" data-type="${s.type}" data-ctx="${esc(s.ctx || "")}" data-id="${s.id || ""}">` + T.f().map((f) => fieldHtml(f, item)).join("") +
+      `<button class="btn block">${s.id ? "Save changes" : "Save"}</button></form>` +
+      (s.type === "event" && item && item.tid && taskOf(item) ? `<p class="note">This event is linked to a task. Changes here update the task.</p><button class="btn block ghost" data-act="evtask">${taskOf(item).x ? "Reopen linked task" : "Mark linked task done"}</button>` : "") +
+      (s.id && !T.custom ? `<button class="btn block ${U.confirm === "sdel" ? "danger" : "ghost"}" data-act="sdel">${U.confirm === "sdel" ? "Tap again to delete" : "Delete"}</button>` : "");
+  }
+  return `<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="Add or edit"><div class="grab"></div>${inner}</div></div>`;
+}
+
+/* ---------- Home cards ---------- */
+const CARD = {
+  habits() {
+    let b = S.habits.length ? "" : '<div class="empty">No habits yet.</div>';
+    S.habits.forEach((x) => {
+      b += `<div class="hb"><div><div class="u-fw5">${esc(x.n)}</div><div class="muted">${streaks(x).cur}-day streak</div></div><div class="dots">`;
+      for (let j = 6; j >= 0; j--) { const k = key(ago(j)), on = !!x.done[k]; b += `<button class="dot${on ? " on" : ""}${j === 0 ? " today" : ""}" data-act="hday" data-id="${x.id}" data-d="${k}" aria-pressed="${on}" aria-label="${esc(x.n)}, ${dl(k)}, ${on ? "done" : "not done"}"></button>`; }
+      b += "</div></div>";
+    });
+    return card("habits", `${S.habits.filter((h) => h.done[TODAY]).length}/${S.habits.length} today`, b);
+  },
+  task(k) {
+    const L = open(S[k]).sort(sortOpen);
+    let b = L.length ? "" : '<div class="empty">All clear.</div>';
+    L.slice(0, 4).forEach((t) => { b += `<div class="li"><button class="chk" data-act="tgl" data-k="${k}" data-id="${t.id}" aria-label="Mark done: ${esc(t.t)}"></button><span class="nm">${esc(t.t)}</span>${prTag(t)}<span class="sub">${dueTxt(t)}</span></div>`; });
+    if (L.length > 4) b += `<a class="more" href="#${k}">+ ${L.length - 4} more</a>`;
+    return card(k, L.length + " open", b);
+  },
+  spend() {
+    const m = monthSum("x"), pct = Math.min(100, m / S.budget * 100);
+    return card("spend", money(S.budget) + " budget", `<div class="row"><div><div class="muted">Today</div><div class="big">${money(spentOn(TODAY))}</div></div><div><div class="muted">This month</div><div class="big">${money(m)}</div></div></div><div class="u-mt3 bar" role="img" aria-label="${Math.round(pct)} percent of budget used"><i class="${m > S.budget ? "over" : ""}" style="width:${pct}%"></i></div>`);
+  },
+  goals() {
+    let b = S.goals.length ? "" : '<div class="empty">No goals yet.</div>';
+    S.goals.slice(0, 3).forEach((g) => { const p = Math.min(100, g.cur / g.target * 100); b += `<div class="u-mt3"><div class="u-aic row"><span class="u-fw5">${esc(g.t)}</span><span class="muted">${Math.round(p)}%</span></div><div class="u-mt2 bar"><i style="width:${p}%"></i></div></div>`; });
+    return card("goals", S.goals.length + " active", b.replace('style="margin-top:var(--s-3)"', ""));
+  },
+  journal() {
+    const e = S.journal.find((x) => x.d === TODAY), last = S.journal.slice().sort((a, b) => (a.d < b.d ? 1 : -1))[0];
+    let b = '<div class="muted" style="margin-bottom:var(--s-2)">How are you today?</div><div class="moods" role="group" aria-label="Mood today">' + [1, 2, 3, 4, 5].map((m) => `<button data-act="mood" data-m="${m}" aria-pressed="${!!e && e.mood === m}">${MOODS[m]}</button>`).join("") + "</div>";
+    if (last && last.txt) b += `<p class="muted" style="margin:10px 0 0">${dl(last.d)}: ${esc(last.txt.slice(0, 90))}${last.txt.length > 90 ? "..." : ""}</p>`;
+    return card("journal", e ? "Logged today" : "Not logged", b);
+  },
+  health() {
+    const w = water(TODAY), sl = S.health.sleep[TODAY];
+    return card("health", "Today", `<div class="water"><div><div class="big">${w}<span class="muted"> / ${S.waterTarget} glasses</span></div><div class="bar" style="width:140px;margin-top:var(--s-2)"><i class="${w >= S.waterTarget ? "good" : ""}" style="width:${Math.min(100, w / S.waterTarget * 100)}%"></i></div></div><div style="display:flex;gap:var(--s-2)"><button class="step" data-act="water" data-d="-1" aria-label="Remove a glass">−</button><button class="step p" data-act="water" data-d="1" aria-label="Add a glass">+</button></div></div><p class="muted" style="margin:12px 0 0">Sleep last night: ${sl ? sl + " h" : "not logged"}</p>`);
+  },
+  calendar() {
+    const L = S.events.filter((e) => e.d >= TODAY).sort((a, b) => (a.d + a.time < b.d + b.time ? -1 : 1)).slice(0, 3);
+    let b = L.length ? "" : '<div class="empty">Nothing coming up.</div>';
+    L.forEach((e) => { b += evRow(e, 1); });
+    return card("calendar", S.events.filter((e) => e.d === TODAY).length + " today", b);
+  },
+  learn() {
+    const act = S.learn.filter((l) => l.st === "active"), wk = lastDays(7, lmin).reduce((a, d) => a + d.v, 0);
+    return card("learn", act.length + " active", (act.length ? act.slice(0, 3).map((l) => { const p = Math.min(100, l.done / l.total * 100); return `<div class="u-mt3"><div class="u-aic row"><span class="u-fw5">${esc(l.t)}</span><span class="muted">${Math.round(p)}%</span></div><div class="u-mt2 bar"><i style="width:${p}%"></i></div></div>`; }).join("") : '<div class="empty">Nothing in progress.</div>') + `<p class="u-mt3 note">${wk} min this week${lstreak() ? " · " + lstreak() + "-day study streak" : ""}</p>`);
+  },
+  proj() {
+    const L = S.proj.filter((p) => p.st === "active").sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")), late = S.proj.reduce((a, p) => a + pOver(p).length, 0);
+    return card("proj", L.length + " in progress", (L.length ? L.slice(0, 3).map((p) => projRow(p)).join("") : '<div class="empty">No project in progress.</div>') + (late ? `<p class="note" style="margin-top:var(--s-2);color:var(--bad)">${late} overdue project ${late === 1 ? "task" : "tasks"}</p>` : ""));
+  },
+  notes() {
+    const L = S.notes.filter((n) => n.st === "on").sort((a, b) => b.pin - a.pin || b.m - a.m);
+    return card("notes", L.length + " notes", (L.length ? L.slice(0, 3).map((n) => nrow(n)).join("") : '<div class="empty">No notes yet.</div>') + (L.length > 3 ? `<a class="more" href="#notes">+ ${L.length - 3} more</a>` : ""));
+  },
+  watch() {
+    const L = S.watch.filter((w) => w.st !== "done").sort((a, b) => (a.st === "doing" ? 0 : 1) - (b.st === "doing" ? 0 : 1) || (a.plan || "9999").localeCompare(b.plan || "9999") || b.id - a.id);
+    return card("watch", L.length + " to go", (L.length ? L.slice(0, 4).map((w) => watchRow(w, 1)).join("") : '<div class="empty">Nothing queued. Add something to watch.</div>') + (L.length > 4 ? `<a class="more" href="#watch">+ ${L.length - 4} more</a>` : ""));
+  },
+  alarms() {
+    const nx = nextAlarm(), L = S.alarms.slice().sort((a, b) => (a.t < b.t ? -1 : 1));
+    return card("alarms", nx ? "Next in " + untilTxt(nx.t - new Date()) : "None on", (L.length ? alarmRows(L.slice(0, 3)) : '<div class="empty">No alarms yet.</div>') + (L.length > 3 ? `<a class="more" href="#alarms">+ ${L.length - 3} more</a>` : ""));
+  },
+  dates() {
+    const L = S.dates.slice().sort((a, b) => daysTo(a) - daysTo(b)).slice(0, 3);
+    return card("dates", S.dates.filter((x) => daysTo(x) <= 30).length + " in 30 days", L.length ? L.map(dateRow).join("") : '<div class="empty">No dates yet.</div>');
+  },
+  bills() {
+    const L = S.bills.slice().sort((a, b) => billState(a).s - billState(b).s || billDue(a) - billDue(b)).filter((b) => billState(b).s < 9).slice(0, 3);
+    let b = L.length ? "" : '<div class="empty">All bills paid this month.</div>';
+    L.forEach((x) => { const st = billState(x); b += `<div class="li two"><span class="nm">${esc(x.n)}</span><span class="tagp ${st.c}">${st.t}</span><span class="sub">${money(x.a)} · due ${dl(billDue(x))}</span></div>`; });
+    return card("bills", S.bills.filter((x) => billState(x).s < 9).length + " unpaid", b);
+  },
+  shop() {
+    const L = open(S.shop);
+    let b = L.length ? "" : '<div class="empty">List is empty.</div>';
+    L.slice(0, 4).forEach((t) => { b += `<div class="li"><button class="chk" data-act="stg" data-id="${t.id}" aria-label="Got it: ${esc(t.t)}"></button><span class="nm">${esc(t.t)}</span><span class="muted">${esc(t.q)}</span></div>`; });
+    if (L.length > 4) b += `<a class="more" href="#shop">+ ${L.length - 4} more</a>`;
+    return card("shop", L.length + " to get", b);
+  },
+  weather() { return card("weather", '<span class="sample">Sample</span>', wxNow()); }
+};
+function wxNow() { return '<div class="wx"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="22" cy="22" r="9" fill="var(--warn)"/><path d="M14 40a9 9 0 0 1 2-17.7A12 12 0 0 1 39 25a8 8 0 0 1-1 15z" fill="var(--soft)" stroke="var(--muted)" stroke-width="1.5"/></svg><div><div class="t">29°</div><div class="muted">Partly cloudy · High 32° · Low 24°</div></div></div>'; }
+
+/* ---------- Pages ---------- */
+function taskRows(L, doneView) {
+  let h = "", last = "";
+  L.forEach((t) => {
+    if (doneView && t.f !== last) { h += `<div class="day">${dl(t.f)}</div>`; last = t.f; }
+    h += `<div class="li${t.x ? " done" : ""}"><button class="chk" data-act="tgl" data-k="${t.k}" data-id="${t.id}" aria-label="${t.x ? "Reopen" : "Mark done"}: ${esc(t.t)}">${t.x ? "✓" : ""}</button><button class="nm" ${edBtn("task", t.k, t.id)}>${esc(t.t)}</button>${prTag(t)}<span class="sub">${t.x ? "Added " + agoTxt(t.c) : (dueTxt(t) || "No due date") + (t.cal ? " · On calendar" : "")}</span></div>`;
+  });
+  return h;
+}
+const PAGE = {
+  habits() {
+    const hs = S.habits, st = hs.map(streaks), done = hs.filter((h) => h.done[TODAY]).length;
+    const avg = hs.length ? Math.round(st.reduce((a, s) => a + s.rate, 0) / hs.length) : 0;
+    let h = stats([[done + "/" + hs.length, "Done today"], [Math.max(0, ...st.map((s) => s.cur)), "Longest streak"], [avg + "%", "30-day rate"]]);
+    if (!hs.length) h += '<div class="card empty">No habits yet. Tap Add.</div>';
+    hs.forEach((x, i) => {
+      const s = st[i], start = ago(83), padn = (start.getDay() + 6) % 7;
+      let heat = '<div class="heat" role="group" aria-label="Last 12 weeks, Monday to Sunday">' + '<span class="hc blank"></span>'.repeat(padn);
+      for (let j = 83; j >= 0; j--) { const k = key(ago(j)), on = !!x.done[k]; heat += `<button class="hc${on ? " on" : ""}${j === 0 ? " today" : ""}" data-act="hday" data-id="${x.id}" data-d="${k}" aria-pressed="${on}" aria-label="${esc(x.n)}, ${dl(k)}, ${on ? "done" : "not done"}"></button>`; }
+      h += `<section class="card"><div class="hhead"><div class="u-mw0"><div class="u-ttl">${esc(x.n)}</div><div class="muted">Streak ${s.cur} · Best ${s.best} · 30-day ${s.rate}%${x.rt ? " · Reminder " + x.rt : ""}</div></div><button class="lnk" ${edBtn("habit", "", x.id)}>Edit</button></div>${heat}</div><p class="note">Last 12 weeks. Tap a square to fix a past day.</p></section>`;
+    });
+    return h;
+  },
+  task(k) {
+    const L = S[k].map((t) => Object.assign({}, t, { k })), tab = U.tab[k], wk = key(ago(6)), q = U.tq.toLowerCase();
+    const ov = L.filter((t) => !t.x && t.due && t.due < TODAY).length;
+    let h = stats([[open(L).length, "Open"], [ov, "Overdue"], [L.filter((t) => t.x && t.f >= wk).length, "Done, 7 days"]]);
+    h += `<form class="inline" data-form="quick" data-type="task" data-ctx="${k}"><input name="t" placeholder="Quick add a ${k} task" aria-label="Quick add" maxlength="80"><button class="btn">Add</button></form>`;
+    h += `<div class="seg" role="group" aria-label="View"><button data-act="tab" data-k="${k}" data-v="open" aria-pressed="${tab === "open"}">Open</button><button data-act="tab" data-k="${k}" data-v="done" aria-pressed="${tab === "done"}">Completed history</button></div>`;
+    h += `<input class="u-bgcard field" id="in-tq" data-live="tq" value="${esc(U.tq)}" placeholder="Search tasks" aria-label="Search tasks">`;
+    let body;
+    if (tab === "open") { const I = open(L).filter((t) => t.t.toLowerCase().includes(q)).sort(sortOpen); body = I.length ? taskRows(I) : '<div class="empty">Nothing here.</div>'; }
+    else {
+      const I = L.filter((t) => t.x && t.t.toLowerCase().includes(q)).sort((a, b) => (a.f < b.f ? 1 : -1));
+      body = I.length ? taskRows(I, 1) + `<div class="u-mt4"><button class="btn sm ${U.confirm === "clr" + k ? "danger" : "ghost"}" data-act="clear" data-k="${k}">${U.confirm === "clr" + k ? "Confirm: remove " + I.length : "Clear completed"}</button></div>` : '<div class="empty">Nothing completed yet.</div>';
+    }
+    return h + `<section class="card">${body}</section>`;
+  },
+  spend() {
+    const m = monthSum("x"), inc = monthSum("i"), pct = Math.min(100, m / S.budget * 100);
+    let h = stats([[money(spentOn(TODAY)), "Spent today"], [money(m), "Spent this month"], [money(inc - m), "Net this month"]]);
+    h += `<section class="card"><h2>Budget<small>${Math.round(pct)}% used</small></h2><div class="bar"><i class="${m > S.budget ? "over" : ""}" style="width:${pct}%"></i></div><div class="u-mt3 row"><span class="muted">${m > S.budget ? "Over by " + money(m - S.budget) : money(S.budget - m) + " left"}</span><label class="f" style="grid-template-columns:auto 110px;align-items:center;gap:var(--s-2)">Monthly budget<input id="in-budget" type="number" min="0" step="100" value="${S.budget}"></label></div></section>`;
+    h += pageCard("Last 14 days", "expenses", bars(lastDays(14, spentOn), money));
+    const tot = {}; S.spend.filter((e) => inMonth(e, "x")).forEach((e) => { tot[e.c] = (tot[e.c] || 0) + e.a; });
+    const cs = Object.keys(tot).sort((a, b) => tot[b] - tot[a]);
+    h += pageCard("By category", "this month", cs.length ? cs.map((c) => `<div class="cat"><span>${c}</span><div class="bar"><i style="width:${tot[c] / m * 100}%"></i></div><span>${money(tot[c])}</span></div>`).join("") : '<div class="empty">No spending this month yet.</div>');
+    const L = S.spend.filter((e) => U.cat === "All" || e.c === U.cat || (U.cat === "Income" && e.k === "i")).sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : b.id - a.id));
+    let hist = '<div class="chips" role="group" aria-label="Filter" style="margin-bottom:var(--s-3)">' + ["All"].concat(CATS, "Income").map((c) => `<button class="chip" data-act="cat" data-v="${c}" aria-pressed="${U.cat === c}">${c}</button>`).join("") + "</div>";
+    let last = "";
+    L.forEach((e) => { if (e.d !== last) { hist += `<div class="day"><span>${dl(e.d)}</span><span>${money(spentOn(e.d))}</span></div>`; last = e.d; } hist += `<button class="ex" ${edBtn("spend", "", e.id)}><span class="l">${esc(e.l || "Entry")}<span class="u-blk muted">${e.c}${e.bid ? " · paid from Bills" : ""}</span></span><span class="r${e.k === "i" ? " inc" : ""}">${e.k === "i" ? "+" : ""}${money(e.a)}</span></button>`; });
+    return h + pageCard("History", "tap to edit", hist + (L.length ? "" : '<div class="empty">No entries.</div>'));
+  },
+  goals() {
+    let h = stats([[S.goals.length, "Goals"], [S.goals.filter((g) => g.cur >= g.target).length, "Reached"], [Math.round(S.goals.reduce((a, g) => a + Math.min(1, g.cur / g.target), 0) / (S.goals.length || 1) * 100) + "%", "Avg progress"]]);
+    if (!S.goals.length) h += '<div class="card empty">No goals yet. Tap Add.</div>';
+    S.goals.forEach((g) => {
+      const p = Math.min(100, g.cur / g.target * 100), left = g.due ? Math.round((fromKey(g.due) - fromKey(TODAY)) / 864e5) : null;
+      const need = left > 0 && g.cur < g.target ? `${num((g.target - g.cur) / left)} ${esc(g.unit)} per day to finish on time` : "";
+      h += `<section class="card"><div class="hhead"><div class="u-mw0"><div class="u-ttl">${esc(g.t)}</div><div class="muted">${num(g.cur)} of ${num(g.target)} ${esc(g.unit)}${left !== null ? " · " + (left < 0 ? "past target date" : left + " days left") : ""}</div></div><button class="lnk" ${edBtn("goal", "", g.id)}>Edit</button></div><div class="bar" style="margin:12px 0 8px"><i class="${p >= 100 ? "good" : ""}" style="width:${p}%"></i></div><div class="u-aic row"><span class="muted">${Math.round(p)}%${need ? " · " + need : ""}</span><button class="btn sm" data-act="new" data-type="glog" data-ctx="${g.id}">Log progress</button></div>`;
+      if (g.log.length) h += "<h3 style=\"margin-top:14px\">Recent progress</h3>" + g.log.slice().sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 3).map((l) => `<div class="ex" style="padding:6px 0"><span class="muted">${dl(l.d)}</span><span class="r">+${num(l.v)} ${esc(g.unit)}</span></div>`).join("");
+      h += "</section>";
+    });
+    return h;
+  },
+  journal() {
+    const q = U.jq.toLowerCase(), L = S.journal.filter((e) => (e.txt + " " + MOODS[e.mood]).toLowerCase().includes(q)).sort((a, b) => (a.d < b.d ? 1 : -1));
+    const m7 = S.journal.filter((e) => e.d >= key(ago(6)) && e.mood);
+    let h = stats([[S.journal.length, "Entries"], [m7.length ? num(m7.reduce((a, e) => a + e.mood, 0) / m7.length) : "–", "Avg mood, 7 days"], [S.journal.filter((e) => e.txt).length, "With notes"]]);
+    h += pageCard("Mood, last 14 days", "1 rough to 5 great", bars(lastDays(14, (k) => { const e = S.journal.find((x) => x.d === k); return e ? e.mood : 0; }), (n) => n));
+    h += `<input class="u-bgcard field" id="in-jq" data-live="jq" value="${esc(U.jq)}" placeholder="Search entries or moods" aria-label="Search journal">`;
+    let b = L.length ? "" : '<div class="empty">No entries.</div>';
+    L.forEach((e) => { b += `<button class="ex" ${edBtn("journal", "", e.id)} style="align-items:start"><span class="l"><span class="u-blk muted">${dl(e.d)} · ${MOODS[e.mood]}</span>${e.txt ? esc(e.txt) : '<span class="muted">No note</span>'}</span></button>`; });
+    return h + pageCard("Entries", "tap to edit", b);
+  },
+  health() {
+    const w = water(TODAY), sl = lastDays(7, (k) => S.health.sleep[k] || 0), sv = sl.filter((d) => d.v);
+    let h = stats([[w + "/" + S.waterTarget, "Glasses today"], [S.health.sleep[TODAY] ? S.health.sleep[TODAY] + " h" : "–", "Sleep last night"], [S.weight.length ? S.weight.slice().sort((a, b) => (a.d < b.d ? 1 : -1))[0].v + " kg" : "–", "Weight"]]);
+    h += pageCard("Water", "daily target " + S.waterTarget, `<div class="water"><div class="big">${w}</div><div style="display:flex;gap:var(--s-2)"><button class="step" data-act="water" data-d="-1" aria-label="Remove a glass">−</button><button class="step p" data-act="water" data-d="1" aria-label="Add a glass">+</button></div></div><div class="u-mt3">${bars(lastDays(7, water), (n) => n, S.waterTarget)}</div><label class="f" style="margin-top:var(--s-3);grid-template-columns:1fr 90px;align-items:center">Daily target (glasses)<input id="in-wt" type="number" min="1" max="30" value="${S.waterTarget}"></label>`);
+    h += pageCard("Sleep", sv.length ? "avg " + num(sv.reduce((a, d) => a + d.v, 0) / sv.length) + " h" : "", bars(sl, (n) => num(n) + " h", 8) + '<div class="u-mt3"><button class="btn sm" data-act="new" data-type="sleep">Log sleep</button></div>');
+    const W = S.weight.slice().sort((a, b) => (a.d < b.d ? -1 : 1));
+    let wb = "";
+    if (W.length > 1) {
+      const mn = Math.min(...W.map((x) => x.v)) - .3, mx = Math.max(...W.map((x) => x.v)) + .3, pts = W.map((x, i) => [8 + i * (320 / (W.length - 1)), 94 - (x.v - mn) / (mx - mn) * 78]);
+      wb = `<svg class="chart" viewBox="0 0 336 110" role="img" aria-label="Weight from ${W[0].v} to ${W[W.length - 1].v} kilograms"><text x="0" y="10">${num(mx)} kg</text><line class="ax" x1="0" y1="100" x2="336" y2="100"/><text x="0" y="109">${num(mn)} kg</text><polyline class="ln" points="${pts.map((p) => p.join(",")).join(" ")}"/>${pts.map((p) => `<circle class="pt" cx="${p[0]}" cy="${p[1]}" r="3"/>`).join("")}</svg><p class="muted" style="margin:8px 0">Change since first entry: ${num(W[W.length - 1].v - W[0].v)} kg</p>`;
+    }
+    wb += W.slice().reverse().slice(0, 5).map((x) => `<button class="ex" ${edBtn("weight", "", x.id)}><span class="l">${dl(x.d)}</span><span class="r">${x.v} kg</span></button>`).join("") + '<div class="u-mt3"><button class="btn sm" data-act="new" data-type="weight">Log weight</button></div>';
+    return h + pageCard("Weight", "", wb);
+  },
+  calendar() {
+    const { y, m } = U.cal, first = new Date(y, m, 1, 12), n = new Date(y, m + 1, 0).getDate();
+    const marks = (k) => S.events.some((e) => e.d === k) || datesOn(k).length > 0 || S.watch.some((w) => w.plan === k && w.st !== "done") || S.notes.some((n) => n.rem === k && n.st === "on") || S.learn.some((l) => l.due === k && l.st === "active") || S.proj.some((x) => x.st !== "done" && (x.due === k || x.tasks.some((t) => !t.x && t.due === k) || x.ms.some((m) => !m.x && m.due === k))) || S.personal.concat(S.office).some((t) => !t.x && t.due === k);
+    let g = '<div class="cal">' + ["M", "T", "W", "T", "F", "S", "S"].map((d) => `<div class="wd">${d}</div>`).join("") + '<span class="cd blank"></span>'.repeat((first.getDay() + 6) % 7);
+    for (let i = 1; i <= n; i++) { const k = key(new Date(y, m, i, 12)); g += `<button class="cd${marks(k) ? " has" : ""}${k === TODAY ? " today" : ""}${k === U.day ? " sel" : ""}" data-act="cday" data-d="${k}" aria-label="${dl(k)}${marks(k) ? ", has items" : ""}" aria-pressed="${k === U.day}">${i}</button>`; }
+    g += "</div>";
+    const head = `<div class="row" style="align-items:center;margin-bottom:var(--s-3)"><button class="ibtn" data-act="cprev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><b>${first.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</b><button class="ibtn" data-act="cnext" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>`;
+    const ev = S.events.filter((e) => e.d === U.day).sort((a, b) => (a.time < b.time ? -1 : 1)), td = S.personal.concat(S.office).filter((t) => !t.x && t.due === U.day && !S.events.some((e) => e.tid === t.id)), bl = S.bills.filter((b) => billDue(b) === U.day && b.paid !== MONTH);
+    let ag = "";
+    ev.forEach((e) => { ag += evRow(e); });
+    S.learn.filter((l) => l.due === U.day && l.st === "active").forEach((l) => { ag += `<button class="ex" ${edBtn("learn", "", l.id)}><span class="l">Finish: ${esc(l.t)}</span><span class="tagp b">Learning</span></button>`; });
+    S.proj.filter((x) => x.st !== "done").forEach((x) => { const row = (l, t) => `<button class="ex" data-act="popen" data-id="${x.id}"><span class="l">${l}: ${esc(t)}<span class="u-blk muted">${esc(x.t)}</span></span><span class="tagp b">Project</span></button>`; if (x.due === U.day) ag += row("Target", x.t); x.ms.forEach((m) => { if (!m.x && m.due === U.day) ag += row("Milestone", m.t); }); x.tasks.forEach((t) => { if (!t.x && t.due === U.day) ag += row("Task", t.t); }); });
+    S.notes.filter((n) => n.rem === U.day && n.st === "on").forEach((n) => { ag += `<button class="ex" data-act="nedit" data-id="${n.id}"><span class="l">Note: ${esc(ntitle(n))}</span><span class="tagp b">Reminder</span></button>`; });
+    S.watch.filter((w) => w.plan === U.day && w.st !== "done").forEach((w) => { ag += `<button class="ex" ${edBtn("watch", "", w.id)}><span class="l">Watch: ${esc(w.t)}<span class="u-blk muted">${w.type === "Series" ? "Web series" : "Movie"}${w.plat ? " · " + esc(w.plat) : ""}</span></span><span class="tagp b">Watchlist</span></button>`; });
+    datesOn(U.day).forEach((x) => { ag += `<button class="ex" ${edBtn("date", "", x.id)}><span class="l">${esc(x.n)}<span class="u-blk muted">${x.kind === "Other" ? "Yearly" : x.kind} · ${dateLabel(x, Number(U.day.slice(0, 4)))}</span></span><span class="tagp ok">Yearly</span></button>`; });
+    td.forEach((t) => { ag += `<div class="li two"><span class="nm">${esc(t.t)}</span>${prTag(t)}<span class="sub">Task due</span></div>`; });
+    bl.forEach((b) => { ag += `<div class="li two"><span class="nm">${esc(b.n)}</span><span class="tagp m">Bill</span><span class="sub">${money(b.a)} due</span></div>`; });
+    const up = S.events.filter((e) => e.d > U.day && e.d <= key(new Date(fromKey(U.day).getTime() + 14 * 864e5))).sort((a, b) => (a.d + a.time < b.d + b.time ? -1 : 1));
+    return pageCard("", "", head + g) + pageCard(dl(U.day), "agenda", ag || '<div class="empty">Nothing planned. Tap Add to schedule something.</div>') + alertNote() + (up.length ? pageCard("Next 14 days", "", up.map((e) => evRow(e, 1)).join("")) : "");
+  },
+  learn() {
+    const tab = U.ltab, by = (f) => S.learn.filter((l) => (f === "done" ? l.st === "done" : l.st !== "done"));
+    let h = stats([[S.learn.filter((l) => l.st === "active").length, "In progress"], [lastDays(7, lmin).reduce((a, d) => a + d.v, 0), "Minutes this week"], [lstreak(), "Day streak"]]);
+    h += `<section class="card"><h2>Study time<small>minutes, last 14 days</small></h2>${bars(lastDays(14, lmin), (n) => n + " min")}</section>`;
+    h += `<div class="seg" role="group" aria-label="View">${[["active", "In progress"], ["done", "Finished"]].map((s) => `<button data-act="ltab" data-v="${s[0]}" aria-pressed="${tab === s[0]}">${s[1]} ${by(s[0]).length}</button>`).join("")}</div>`;
+    const L = by(tab).sort((a, b) => (tab === "done" ? (a.f || "") < (b.f || "") ? 1 : -1 : (a.due || "9999").localeCompare(b.due || "9999")));
+    return h + (L.length ? L.map(learnCard).join("") : `<section class="card"><div class="empty">${tab === "done" ? "Nothing finished yet." : "Nothing in progress. Tap Add."}</div></section>`);
+  },
+  proj() {
+    const p = U.pview === "detail" ? byId(S.proj, U.pid) : null;
+    if (p) {
+      const pc = pPct(p), tl = p.tasks.length, dn = p.tasks.filter((t) => t.x).length, hl = phealth(p), hrs = pHours(p), late = pOver(p).length;
+      const pRank = { h: 0, m: 1, l: 2 };
+      let h = `<div class="nbar"><button class="lnk" data-act="pback">‹ Projects</button><span class="r"><button class="lnk" data-act="pdup">Duplicate</button><button class="lnk" ${edBtn("proj", "", p.id)}>Edit</button></span></div><div class="ntitle">${esc(p.t)}</div>`;
+      h += `<p class="muted" style="margin:0 0 10px"><span class="tagp ${PTAG[p.st]}">${PST.find((s) => s[0] === p.st)[1]}</span> <span class="tagp ${p.pr === "h" ? "h" : p.pr === "m" ? "m" : ""}">${PPR[p.pr]} priority</span> <span class="tagp">${esc(p.cat)}</span>${hl && p.st !== "done" ? ` <span class="tagp ${hl[1]}">${hl[0]}</span>` : ""}</p>`;
+      if (p.desc) h += `<p style="margin:0 0 12px;white-space:pre-line;overflow-wrap:anywhere">${esc(p.desc)}</p>`;
+      h += stats([[pc + "%", "Complete"], [p.due ? (dnum(p.due) < 0 ? "Late" : dnum(p.due)) : "–", p.due ? "Days left" : "No target"], [tl - dn, "Open tasks"]]);
+      h += `<div class="bar" style="margin:4px 0 12px"><i class="${pc >= 100 ? "good" : ""}" style="width:${pc}%"></i></div><p class="note" style="margin:0 0 10px">${p.start ? "Started " + dl(p.start) + ". " : ""}${p.due ? "Target " + dl(p.due) + ". " : ""}${late ? late + " overdue " + (late === 1 ? "task" : "tasks") + ". " : ""}${hrs ? num(hrs) + " hours logged." : ""}</p>`;
+      h += `<div class="seg" role="group" aria-label="Status">${PST.map((s) => `<button data-act="pstat" data-v="${s[0]}" aria-pressed="${p.st === s[0]}">${s[1]}</button>`).join("")}</div>`;
+      // milestones
+      const ms = p.ms.slice().sort((a, b) => a.x - b.x || (a.due || "9999").localeCompare(b.due || "9999"));
+      h += `<section class="card"><h2>Milestones<small>${p.ms.filter((m) => m.x).length}/${p.ms.length}</small><button class="lnk" data-act="new" data-type="pms" data-ctx="${p.id}">Add</button></h2>`;
+      h += ms.map((m) => `<div class="li${m.x ? " done" : ""}"><button class="chk" data-act="mtgl" data-id="${m.id}" aria-label="${m.x ? "Reopen" : "Complete"}: ${esc(m.t)}">${m.x ? "✓" : ""}</button><button class="nm" ${edBtn("pms", p.id, m.id)}>${esc(m.t)}</button><span class="sub">${m.due ? (m.x ? dl(m.due) : dleft(m.due)) : ""}</span></div>`).join("") || '<div class="empty">No milestones. Add the big checkpoints.</div>';
+      h += "</section>";
+      // tasks
+      const ts = p.tasks.slice().sort((a, b) => a.x - b.x || (a.due || "9999").localeCompare(b.due || "9999") || pRank[a.p || "m"] - pRank[b.p || "m"]);
+      h += `<section class="card"><h2>Tasks<small>${dn}/${tl} done</small></h2>`;
+      h += ts.map((t) => { const pl = t.ptid && byId(S.personal, t.ptid); return `<div class="li${t.x ? " done" : ""}"><button class="chk" data-act="ptgl" data-id="${t.id}" aria-label="${t.x ? "Reopen" : "Complete"}: ${esc(t.t)}">${t.x ? "✓" : ""}</button><button class="nm" ${edBtn("ptask", p.id, t.id)}>${esc(t.t)}</button>${t.p === "h" && !t.x ? '<span class="tagp h">High</span>' : ""}<span class="sub">${t.due ? (!t.x && t.due < TODAY ? '<span style="color:var(--bad)">' + dleft(t.due) + "</span>" : dl(t.due)) : ""}${!t.x ? (pl ? " · in Personal tasks" : ` · <button class="lnk" data-act="ptpush" data-id="${t.id}">Add to my tasks</button>`) : ""}</span></div>`; }).join("") || '<div class="empty">No tasks yet.</div>';
+      h += `<form class="u-mt3 inline" data-form="quick" data-type="ptask"><input name="t" placeholder="Add a task" aria-label="Add a task" maxlength="100"><button class="btn">Add</button></form>`;
+      if (tl && dn === tl && p.st === "active") h += '<button class="u-mt3 btn block" data-act="pstat" data-v="done">All tasks done. Mark project done</button>';
+      h += "</section>";
+      // time
+      h += `<section class="card"><h2>Time spent<small>${num(hrs)} h total</small><button class="lnk" data-act="new" data-type="ptime" data-ctx="${p.id}">Log time</button></h2>`;
+      h += bars(lastDays(7, (k) => p.time.filter((x) => x.d === k).reduce((a, x) => a + x.h, 0)), (n) => num(n) + " h");
+      h += p.time.slice().sort((a, b) => (a.d < b.d ? 1 : -1)).slice(0, 4).map((x) => `<button class="ex" ${edBtn("ptime", p.id, x.id)}><span class="l"><span class="u-blk muted">${dl(x.d)}</span>${esc(x.t || "Work session")}</span><span class="r">${num(x.h)} h</span></button>`).join("");
+      h += "</section>";
+      // notes + links
+      const nts = S.notes.filter((n) => n.pid === p.id && n.st === "on");
+      h += `<section class="card"><h2>Notes<small>${nts.length}</small><button class="lnk" data-act="pnote">New note</button></h2>${nts.map((n) => nrow(n)).join("") || '<div class="empty">Keep project notes in the Notes widget.</div>'}</section>`;
+      h += `<section class="card"><h2>Links<small>${p.links.length}</small><button class="lnk" data-act="new" data-type="plink" data-ctx="${p.id}">Add</button></h2>${p.links.map((l) => /^https?:\/\//i.test(l.u) ? `<div class="ex"><a class="l" href="${esc(l.u)}" target="_blank" rel="noopener noreferrer">${esc(l.t || l.u)}</a><button class="lnk" ${edBtn("plink", p.id, l.id)}>Edit</button></div>` : `<button class="ex" ${edBtn("plink", p.id, l.id)}><span class="l">${esc(l.t || l.u)}</span><span class="muted">Not a web link</span></button>`).join("") || '<div class="empty">Repos, docs, designs and references.</div>'}</section>`;
+      // updates
+      h += `<section class="card"><h2>Progress log<small>${p.ups.length}</small></h2><form class="inline" data-form="quick" data-type="pup"><input name="t" placeholder="What did you do today?" aria-label="Add a progress note" maxlength="160"><button class="btn">Add</button></form>`;
+      h += p.ups.map((u, i) => [u, i]).sort((a, b) => (a[0].d < b[0].d ? 1 : -1)).map(([u, i]) => `<div class="ex" style="align-items:start"><span class="l"><span class="u-blk muted">${dl(u.d)}</span>${esc(u.t)}</span><button class="lnk" data-act="pudel" data-i="${i}" aria-label="Remove note">×</button></div>`).join("");
+      return h + "</section>";
+    }
+    const f = U.pst, q = U.pq.toLowerCase(), wk = key(ago(6));
+    let h = stats([[S.proj.filter((x) => x.st === "active").length, "In progress"], [S.proj.reduce((a, x) => a + (x.st === "done" ? 0 : x.tasks.filter((t) => !t.x).length), 0), "Open tasks"], [num(S.proj.reduce((a, x) => a + pHours(x, wk), 0)), "Hours this week"]]);
+    const late = S.proj.reduce((a, x) => a + pOver(x).length, 0), risk = S.proj.filter((x) => { const k = phealth(x); return k && (k[0] === "At risk" || k[0] === "Overdue"); }).length;
+    if (late || risk) h += `<p class="note" style="color:var(--bad);margin:0 0 8px">${[late ? late + " overdue " + (late === 1 ? "task" : "tasks") : "", risk ? risk + " " + (risk === 1 ? "project" : "projects") + " at risk" : ""].filter(Boolean).join(" · ")}</p>`;
+    h += `<div class="seg" role="group" aria-label="Layout">${[["list", "List"], ["board", "Board"]].map((s) => `<button data-act="pmode" data-v="${s[0]}" aria-pressed="${U.pmode === s[0]}">${s[1]}</button>`).join("")}</div>`;
+    const base = S.proj.filter((x) => (x.t + " " + x.desc + " " + x.cat).toLowerCase().includes(q));
+    h += `<input class="u-bgcard field" id="in-pq" data-live="pq" value="${esc(U.pq)}" placeholder="Search projects" aria-label="Search projects">`;
+    if (U.pmode === "board") {
+      h += '<div class="board">' + PST.map((s) => { const c = base.filter((x) => x.st === s[0]).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")); return `<section class="bcol"><h3>${s[1]} <span class="muted">${c.length}</span></h3>${c.map((x) => { const i = PST.findIndex((z) => z[0] === x.st); return `<div class="bcard">${projRow(x, 1)}<div class="inline" style="justify-content:space-between"><button class="lnk" data-act="pmove" data-id="${x.id}" data-v="-1"${i === 0 ? " disabled" : ""} aria-label="Move ${esc(x.t)} to ${i ? PST[i - 1][1] : ""}">◀</button><button class="lnk" data-act="pmove" data-id="${x.id}" data-v="1"${i === 3 ? " disabled" : ""} aria-label="Move ${esc(x.t)} to ${i < 3 ? PST[i + 1][1] : ""}">▶</button></div></div>`; }).join("") || '<div class="empty">Empty</div>'}</section>`; }).join("") + "</div>";
+      return h;
+    }
+    h += `<div class="chips" role="group" aria-label="Status">${[["All", "All"]].concat(PST).map((s) => `<button class="chip" data-act="pfilt" data-v="${s[0]}" aria-pressed="${f === s[0]}">${s[1]}</button>`).join("")}<button class="chip" data-act="psort">Sort: ${{ due: "Target date", pr: "Priority", prog: "Progress", new: "Newest" }[U.psort]}</button></div>`;
+    const rk = { h: 0, m: 1, l: 2 }, st = (x) => (x.st === "active" ? 0 : x.st === "idea" ? 1 : x.st === "hold" ? 2 : 3);
+    const cmp = { due: (a, b) => (a.due || "9999").localeCompare(b.due || "9999"), pr: (a, b) => rk[a.pr] - rk[b.pr], prog: (a, b) => pPct(b) - pPct(a), new: (a, b) => b.id - a.id }[U.psort];
+    const L = base.filter((x) => f === "All" || x.st === f).sort((a, b) => st(a) - st(b) || cmp(a, b));
+    return h + `<section class="card">${L.length ? L.map((x) => projRow(x)).join("") : '<div class="empty">No projects here. Tap Add.</div>'}</section>`;
+  },
+  notes() {
+    const live = S.notes.filter((n) => n.st === "on"), gone = S.notes.filter((n) => n.st === "trash"), v = U.nview, fo = U.nfolder, n0 = v === "edit" ? byId(S.notes, U.nid) : null;
+    if (v === "edit" && !n0) U.nview = "list";
+    if (U.nview === "edit") {
+      const n = n0, back = fo === "Trash" ? "Recently Deleted" : fo === "All" ? "Notes" : fo;
+      let h = `<div class="nbar"><button class="lnk" data-act="nback">‹ ${esc(back)}</button><span class="r"><button class="lnk" data-act="npin" aria-pressed="${!!n.pin}">${n.pin ? "Unpin" : "Pin"}</button><button class="lnk" data-act="nchk">Checklist</button><button class="lnk" data-act="nmore" aria-expanded="${!!U.nmenu}">More</button></span></div>`;
+      if (U.nmenu) h += `<section class="card"><label class="f">Folder<select data-nf="lab">${S.nfold.map((f) => `<option${f === n.lab ? " selected" : ""}>${esc(f)}</option>`).join("")}</select></label><label class="f">Remind me on<input type="date" data-nf="rem" value="${esc(n.rem)}"></label><div class="inline" style="flex-wrap:wrap;margin-top:var(--s-2)"><button class="btn sm ghost" data-act="ndup">Duplicate</button><button class="btn sm ghost" data-act="n2task"${n.tkid && byId(S.personal, n.tkid) ? " disabled" : ""}>${n.tkid && byId(S.personal, n.tkid) ? "Task added" : "Make a task"}</button><button class="btn sm danger" data-act="ntrash">Delete note</button></div></section>`;
+      h += `<div class="nmeta">${new Date(n.m).toLocaleString([], { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} · ${nwords(n)} words</div>`;
+      h += `<input class="nin" data-nf="t" value="${esc(n.t)}" placeholder="Title" aria-label="Title" maxlength="120">`;
+      h += `<textarea class="nbody" data-nf="body" rows="${Math.max(8, n.body.split("\n").length + 2)}" placeholder="Note" aria-label="Note text" maxlength="8000">${esc(n.body)}</textarea>`;
+      h += n.items.map((it, i) => `<div class="nitem${it.x ? " done" : ""}"><button class="chk" data-act="ntgl" data-id="${n.id}" data-i="${i}" aria-label="${it.x ? "Uncheck" : "Check"} item ${i + 1}">${it.x ? "✓" : ""}</button><input data-ni="${i}" value="${esc(it.t)}" placeholder="List item" aria-label="Checklist item ${i + 1}" maxlength="120"><button class="lnk" data-act="nidel" data-i="${i}" aria-label="Remove item ${i + 1}">×</button></div>`).join("");
+      return h + (n.items.length ? '<button class="u-mt2 lnk" data-act="nchk">+ Add item</button>' : "");
+    }
+    if (v === "list") {
+      const trash = fo === "Trash", q = U.nq.toLowerCase();
+      const base = trash ? gone : live.filter((n) => fo === "All" || n.lab === fo);
+      const L = base.filter((n) => (n.t + " " + n.body + " " + n.items.map((i) => i.t).join(" ") + " " + n.lab).toLowerCase().includes(q)).sort((a, b) => (trash ? 0 : b.pin - a.pin) || b.m - a.m);
+      let h = `<div class="nbar"><button class="lnk" data-act="nback">‹ Folders</button>${trash ? (gone.length ? `<button class="lnk" data-act="nempty">${U.confirm === "nempty" ? "Tap again to delete all" : "Delete All"}</button>` : "") : '<button class="lnk" data-act="nnew">New note</button>'}</div><div class="ntitle">${trash ? "Recently Deleted" : fo === "All" ? "All Notes" : esc(fo)}</div>`;
+      h += `<input class="u-bgcard field" id="in-nq" data-live="nq" value="${esc(U.nq)}" placeholder="Search" aria-label="Search notes">`;
+      let last = "", body = "";
+      L.forEach((n) => { const g = trash ? "" : ngroup(n); if (g !== last) { body += (last ? "</section>" : "") + (g ? `<div class="ngrp">${esc(g)}</div>` : "") + '<section class="card">'; last = g; } body += trash ? `<div class="nrow" style="display:flex;justify-content:space-between;gap:var(--s-3);align-items:center"><span style="color:var(--ink);font-size:16px;white-space:normal">${esc(ntitle(n))}</span><span style="flex:none"><button class="lnk" data-act="nrestore" data-id="${n.id}">Recover</button> <button class="lnk" data-act="ndelf" data-id="${n.id}">${U.confirm === "ndelf" + n.id ? "Sure?" : "Delete"}</button></span></div>` : nrow(n, fo === "All"); });
+      h += L.length ? body + "</section>" : `<section class="card"><div class="empty">${trash ? "No deleted notes." : "No notes."}</div></section>`;
+      h += `<p class="note" style="text-align:center">${L.length} ${L.length === 1 ? "Note" : "Notes"}${trash ? ". Notes are deleted for good after 30 days." : ""}</p>`;
+      if (!trash && fo !== "All" && fo !== "Notes") h += `<button class="lnk" data-act="nfdel" style="display:block;margin:0 auto">${U.confirm === "nfdel" ? "Tap again to delete this folder and its notes" : "Delete folder"}</button>`;
+      return h;
+    }
+    let h = '<div class="ntitle">Folders</div>';
+    h += `<section class="card"><button class="ex" data-act="nopen" data-v="All"><span class="l">All Notes</span><span class="muted">${live.length} ›</span></button>${S.nfold.map((f) => `<button class="ex" data-act="nopen" data-v="${esc(f)}"><span class="l">${esc(f)}</span><span class="muted">${live.filter((n) => n.lab === f).length} ›</span></button>`).join("")}<button class="ex" data-act="nopen" data-v="Trash"><span class="l">Recently Deleted</span><span class="muted">${gone.length} ›</span></button></section>`;
+    h += `<form class="inline" data-form="quick" data-type="nfolder"><input name="t" placeholder="New folder name" aria-label="New folder name" maxlength="30"><button class="btn">Add folder</button></form>`;
+    return h + '<button class="btn block" data-act="nnew">New note</button>';
+  },
+  watch() {
+    const by = (st) => S.watch.filter((w) => w.st === st), q = U.wq.toLowerCase(), tab = U.wtab;
+    let h = stats([[by("todo").length, "To watch"], [by("doing").length, "Watching"], [by("done").length, "Watched"]]);
+    const pk = U.pick ? byId(S.watch, U.pick) : null;
+    if (pk && pk.st === "todo") h += `<section class="card"><h2>Tonight's pick</h2><div style="font-size:var(--fs-xl);font-weight:700;letter-spacing:-.02em;line-height:1.2;overflow-wrap:anywhere">${esc(pk.t)}</div><p class="muted" style="margin:4px 0 12px">${pk.type === "Series" ? "Web series" : "Movie"}${pk.plat ? " · " + esc(pk.plat) : ""}</p><div class="inline"><button class="btn sm" data-act="wstart" data-id="${pk.id}">Start watching</button><button class="btn sm ghost" data-act="wpick">Pick another</button><button class="lnk" data-act="wdis">Dismiss</button></div></section>`;
+    h += `<form class="inline" data-form="quick" data-type="watch"><input name="t" placeholder="Add a movie or series" aria-label="Add a movie or series" maxlength="80"><select name="type" aria-label="Type" style="flex:0 0 100px"><option value="Movie">Movie</option><option value="Series">Series</option></select><button class="btn">Add</button></form>`;
+    h += `<div class="seg" role="group" aria-label="Status">${[["todo", "To watch"], ["doing", "Watching"], ["done", "Watched"]].map((s) => `<button data-act="wtab" data-v="${s[0]}" aria-pressed="${tab === s[0]}">${s[1]} ${by(s[0]).length}</button>`).join("")}</div>`;
+    h += `<div class="chips" role="group" aria-label="Type">${[["All", "All"], ["Movie", "Movies"], ["Series", "Web series"]].map((c) => `<button class="chip" data-act="wtype" data-v="${c[0]}" aria-pressed="${U.wtype === c[0]}">${c[1]}</button>`).join("")}${tab === "todo" ? '<button class="chip" data-act="wpick">Pick for me</button>' : ""}</div>`;
+    h += `<input class="u-bgcard field" id="in-wq" data-live="wq" value="${esc(U.wq)}" placeholder="Search title, platform or note" aria-label="Search watchlist">`;
+    let L = by(tab).filter((w) => (U.wtype === "All" || w.type === U.wtype) && (w.t + " " + w.plat + " " + w.note).toLowerCase().includes(q));
+    let body = "";
+    if (tab === "done") {
+      L.sort((a, b) => ((a.f || "") < (b.f || "") ? 1 : -1));
+      let last = ""; L.forEach((w) => { if (w.f !== last) { body += `<div class="day">${w.f ? dl(w.f) : "Earlier"}</div>`; last = w.f; } body += watchRow(w); });
+      const rated = L.filter((w) => w.rate); if (rated.length) body += `<p class="u-mt3 note">Average rating: ${num(rated.reduce((a, w) => a + w.rate, 0) / rated.length)} of 5</p>`;
+    } else {
+      L.sort((a, b) => (a.plan || "9999").localeCompare(b.plan || "9999") || b.id - a.id);
+      L.forEach((w) => { body += watchRow(w) + (w.note ? `<div class="muted" style="margin:-4px 0 6px 34px">${esc(w.note)}</div>` : ""); });
+    }
+    return h + `<section class="card">${body || '<div class="empty">Nothing here.</div>'}</section>`;
+  },
+  alarms() {
+    const nx = nextAlarm(), L = S.alarms.slice().sort((a, b) => (a.t < b.t ? -1 : 1)), lead = S.alerts.lead * 60000, now = new Date();
+    let h = stats([[S.alarms.filter((a) => a.on).length, "Alarms on"], [nx ? nx.a.t : "–", "Next alarm"], [nx ? untilTxt(nx.t - now) : "–", "Rings in"]]);
+    h += pageCard("Your alarms", "tap a time to edit", L.length ? alarmRows(L) : '<div class="empty">No alarms yet. Tap Add.</div>');
+    const up = S.events.filter((e) => e.time).map((e) => ({ e, s: new Date(e.d + "T" + e.time + ":00") })).filter((x) => x.s > now && !(x.e.tid && taskOf(x.e) && taskOf(x.e).x)).sort((a, b) => a.s - b.s).slice(0, 5);
+    const np = window.Notification ? Notification.permission : "unsupported";
+    h += `<section class="card"><h2>Calendar event alerts</h2><div class="sw"><div>Ring for every calendar event<small>Before the start and at the start time</small></div><button class="tg" data-act="alon" aria-pressed="${!!S.alerts.on}" aria-label="Event alerts"></button></div><label class="f" style="grid-template-columns:1fr 130px;align-items:center;margin:4px 0 12px">Ring before the start<select id="in-lead">${[5, 10, 15, 30, 60].map((n) => `<option value="${n}"${n === S.alerts.lead ? " selected" : ""}>${n} minutes</option>`).join("")}</select></label>`;
+    h += S.alerts.on ? (up.length ? "<h3>Next alerts</h3>" + up.map((x) => `<div class="li two"><span class="nm">${esc(x.e.t)}</span><span class="tagp">${hm(new Date(x.s - lead))} and ${x.e.time}</span><span class="sub">${dl(x.e.d)}</span></div>`).join("") : '<div class="empty">No upcoming events with a time.</div>') : '<div class="empty">Alerts are off.</div>';
+    h += `<p class="u-mt3 note">All-day events have no start time, so they do not ring. Done tasks linked to an event stay quiet.</p></section>`;
+    h += `<section class="card"><h2>Try it</h2><div class="inline"><button class="btn sm" data-act="rtest">Ring an alarm now</button><button class="btn sm ghost" data-act="rtest2">Test an event alert</button></div><p class="u-mt3 note">Alarms ring while this page is open: a full-screen card with sound (after your first tap) and vibration. The real app uses phone notifications, so they ring when the app is closed. System notifications here: ${np}.</p>${np === "default" ? '<div class="u-mt3"><button class="btn sm ghost" data-act="notif">Allow system notifications</button></div>' : ""}</section>`;
+    return h;
+  },
+  dates() {
+    const all = S.dates.slice().sort((a, b) => daysTo(a) - daysTo(b)), L = all.filter((x) => U.dkind === "All" || x.kind === U.dkind);
+    let h = stats([[all.length ? ((n) => (n === 0 ? "Today" : n + (n === 1 ? " day" : " days")))(daysTo(all[0])) : "–", "Until next"], [all.filter((x) => daysTo(x) <= 30).length, "In next 30 days"], [all.length, "Saved dates"]]);
+    if (all.length) h += `<p class="note">Next: ${esc(all[0].n)}</p>`;
+    h += '<div class="chips" role="group" aria-label="Filter">' + ["All", "Birthday", "Anniversary", "Other"].map((c) => `<button class="chip" data-act="dkind" data-v="${c}" aria-pressed="${U.dkind === c}">${{ All: "All", Birthday: "Birthdays", Anniversary: "Anniversaries", Other: "Other" }[c]}</button>`).join("") + "</div>";
+    let body = L.length ? "" : '<div class="empty">No dates here. Tap Add.</div>', last = "";
+    L.forEach((x) => {
+      const nk = nextOcc(x), mh = fromKey(nk).toLocaleDateString(undefined, { month: "long" }) + (nk.slice(0, 4) !== TODAY.slice(0, 4) ? " " + nk.slice(0, 4) : "");
+      if (mh !== last) { body += `<div class="day">${mh}</div>`; last = mh; }
+      body += dateRow(x);
+    });
+    return h + pageCard("Coming up", "tap to edit", body) + '<p class="note">These repeat every year. In the real app, each one sends a notification on the day you choose.</p>';
+  },
+  bills() {
+    const tot = S.bills.reduce((a, b) => a + b.a, 0), unpaid = S.bills.filter((b) => b.paid !== MONTH);
+    let h = stats([[money(tot), "Monthly total"], [money(unpaid.reduce((a, b) => a + b.a, 0)), "Still to pay"], [unpaid.length, "Unpaid"]]);
+    const L = S.bills.slice().sort((a, b) => billState(a).s - billState(b).s || a.day - b.day);
+    return h + pageCard("This month", "", L.length ? L.map((b) => { const st = billState(b); return `<div class="li"><button class="chk${b.paid === MONTH ? " on" : ""}" data-act="bpaid" data-id="${b.id}" aria-pressed="${b.paid === MONTH}" aria-label="${b.paid === MONTH ? "Mark unpaid" : "Mark paid"}: ${esc(b.n)}">${b.paid === MONTH ? "✓" : ""}</button><button class="nm" ${edBtn("bill", "", b.id)}>${esc(b.n)}</button><span class="tagp ${st.c}">${st.t}</span><span class="sub">${money(b.a)} · due ${dl(billDue(b))}</span></div>`; }).join("") : '<div class="empty">No bills yet.</div>');
+  },
+  shop() {
+    const L = S.shop.slice().sort((a, b) => a.x - b.x), got = S.shop.length - open(S.shop).length;
+    let h = `<form class="inline" data-form="quick" data-type="shop"><input name="t" placeholder="Add an item" aria-label="Add an item" maxlength="60"><button class="btn">Add</button></form>`;
+    h += pageCard("List", open(S.shop).length + " to get", L.length ? L.map((t) => `<div class="li${t.x ? " done" : ""}"><button class="chk" data-act="stg" data-id="${t.id}" aria-label="${t.x ? "Put back" : "Got it"}: ${esc(t.t)}">${t.x ? "✓" : ""}</button><button class="nm" ${edBtn("shop", "", t.id)}>${esc(t.t)}</button><span class="muted">${esc(t.q)}</span></div>`).join("") + (got ? `<div class="u-mt4"><button class="btn sm ${U.confirm === "clrshop" ? "danger" : "ghost"}" data-act="clrshop">${U.confirm === "clrshop" ? "Confirm: remove " + got : "Clear checked items"}</button></div>` : "") : '<div class="empty">List is empty.</div>');
+    return h;
+  },
+  weather() {
+    const hrs = [["Now", 29], ["1pm", 31], ["2pm", 32], ["3pm", 32], ["4pm", 31], ["5pm", 29], ["6pm", 27], ["7pm", 26], ["8pm", 25]];
+    const fc = [["Today", "Partly cloudy", 32, 24], ["Wed", "Sunny", 33, 24], ["Thu", "Light rain", 29, 23], ["Fri", "Rain", 27, 22], ["Sat", "Cloudy", 28, 22], ["Sun", "Sunny", 31, 23], ["Mon", "Sunny", 32, 24]];
+    return pageCard("Right now", '<span class="sample">Sample</span>', wxNow()) + stats([["32°", "Feels like"], ["64%", "Humidity"], ["11", "Wind km/h"]]) +
+      pageCard("Next hours", "", '<div class="hours">' + hrs.map((x) => `<div>${x[0]}<b>${x[1]}°</b></div>`).join("") + "</div>") +
+      pageCard("7-day forecast", "", fc.map((x) => `<div class="fc"><span>${x[0]}</span><span>${x[1]}</span><span>${x[2]}° / ${x[3]}°</span></div>`).join("")) +
+      '<p class="note">In the app this is live data from Open-Meteo with no API key. This preview cannot make network calls, so every number here is a placeholder.</p>';
+  }
+};
+const ADD = { habits: ["habit", ""], personal: ["task", "personal"], office: ["task", "office"], spend: ["spend", ""], goals: ["goal", ""], journal: ["journal", ""], calendar: ["event", ""], dates: ["date", ""], alarms: ["alarm", ""], watch: ["watch", ""], notes: ["note", ""], learn: ["learn", ""], proj: ["proj", ""], bills: ["bill", ""] };
+
+/* ---------- Apps, Search, Insights, Settings ---------- */
+function liveStat(k) {
+  return { habits: S.habits.filter((h) => h.done[TODAY]).length + "/" + S.habits.length + " today", personal: open(S.personal).length + " open", office: open(S.office).length + " open", calendar: S.events.filter((e) => e.d === TODAY).length + " today", dates: S.dates.filter((x) => daysTo(x) <= 30).length + " in 30 days", alarms: S.alarms.filter((a) => a.on).length + " on", watch: S.watch.filter((w) => w.st === "todo").length + " to watch", notes: S.notes.filter((n) => n.st === "on").length + " notes", learn: S.learn.filter((l) => l.st === "active").length + " active", proj: S.proj.filter((x) => x.st === "active").length + " in progress", spend: money(spentOn(TODAY)) + " today", goals: S.goals.length + " goals", health: water(TODAY) + "/" + S.waterTarget + " glasses", journal: S.journal.some((e) => e.d === TODAY) ? "Logged today" : "Not logged", bills: S.bills.filter((b) => b.paid !== MONTH).length + " unpaid", shop: open(S.shop).length + " to get", weather: "29° sample" }[k];
+}
+function searchResults() {
+  const q = U.q.trim().toLowerCase(); if (q.length < 2) return '<div class="empty">Type at least two letters.</div>';
+  const R = [], add = (k, t, s) => { if ((t || "").toLowerCase().includes(q)) R.push([k, t, s]); };
+  S.personal.forEach((t) => add("personal", t.t, "Personal task")); S.office.forEach((t) => add("office", t.t, "Office task"));
+  S.habits.forEach((h) => add("habits", h.n, "Habit")); S.dates.forEach((x) => add("dates", x.n, "Yearly date · " + x.kind)); S.alarms.forEach((a) => add("alarms", a.label, "Alarm · " + a.t)); S.learn.forEach((l) => add("learn", l.t, "Learning · " + l.kind)); S.proj.forEach((x) => add("proj", x.t + " " + x.desc, "Project · " + x.st)); S.notes.forEach((n) => { if (n.st === "on") add("notes", n.t + " " + n.body, "Note · " + n.lab); }); S.watch.forEach((w) => add("watch", w.t, "Watchlist · " + (w.type === "Series" ? "series" : "movie"))); S.goals.forEach((g) => add("goals", g.t, "Goal")); S.events.forEach((e) => add("calendar", e.t, "Event · " + dl(e.d)));
+  S.spend.forEach((e) => add("spend", e.l, "Money · " + money(e.a))); S.journal.forEach((e) => add("journal", e.txt, "Journal · " + dl(e.d))); S.bills.forEach((b) => add("bills", b.n, "Bill")); S.shop.forEach((t) => add("shop", t.t, "Shopping"));
+  return R.length ? R.slice(0, 30).map((r) => `<a class="li two" href="#${r[0]}" style="grid-template-columns:auto 1fr"><span>${icon(r[0])}</span><span><span class="nm" style="display:block;overflow-wrap:anywhere">${esc(r[1].slice(0, 90))}</span><span class="muted">${r[2]}</span></span></a>`).join("") : '<div class="empty">No matches.</div>';
+}
+function insights() {
+  const d7 = lastDays(7, () => 0).map((d) => d.k), prev = lastDays(14, () => 0).map((d) => d.k).slice(0, 7);
+  const hdone = S.habits.reduce((a, h) => a + d7.filter((k) => h.done[k]).length, 0), hrate = S.habits.length ? Math.round(hdone / (S.habits.length * 7) * 100) : 0;
+  const tdone = S.personal.concat(S.office).filter((t) => t.x && t.f >= d7[0]).length;
+  const sp = d7.reduce((a, k) => a + spentOn(k), 0), spp = prev.reduce((a, k) => a + spentOn(k), 0);
+  const mo = S.journal.filter((e) => e.d >= d7[0] && e.mood), sl = d7.map((k) => S.health.sleep[k]).filter(Boolean);
+  let h = `<div class="hero"><div><div class="hi">Last 7 days</div><h2>${hrate}% of habits done</h2></div><div class="hero-stats"><div class="hs"><b>${tdone}</b><span>Tasks done</span></div><div class="hs"><b>${d7.filter((k) => water(k) >= S.waterTarget).length}/7</b><span>Water goal</span></div><div class="hs"><b>${mo.length ? num(mo.reduce((a, e) => a + e.mood, 0) / mo.length) : "–"}</b><span>Avg mood</span></div></div></div>`;
+  h += pageCard("Spending", "vs previous 7 days", `<div class="row"><div><div class="big">${money(sp)}</div><div class="muted">this week</div></div><div><div class="big">${money(spp)}</div><div class="muted">last week</div></div></div><p class="muted" style="margin:10px 0 0">${spp ? (sp <= spp ? "Down " : "Up ") + Math.abs(Math.round((sp - spp) / spp * 100)) + "% compared with last week." : "Not enough history to compare."}</p>`);
+  h += pageCard("Health", "7-day average", stats([[num(d7.reduce((a, k) => a + water(k), 0) / 7), "Glasses a day"], [sl.length ? num(sl.reduce((a, b) => a + b, 0) / sl.length) + " h" : "–", "Sleep"], [d7.filter((k) => water(k) >= S.waterTarget).length + "/7", "Water goal hit"]]));
+  const hb = S.habits.map((x) => [x, streaks(x)]).sort((a, b) => b[1].rate - a[1].rate);
+  h += pageCard("Habit ranking", "30-day rate", hb.length ? hb.map((r) => `<div class="cat" style="grid-template-columns:110px 1fr auto"><span style="overflow-wrap:anywhere">${esc(r[0].n)}</span><div class="bar"><i style="width:${r[1].rate}%"></i></div><span>${r[1].rate}%</span></div>`).join("") : '<div class="empty">No habits yet.</div>');
+  const notes = [], ov = S.personal.concat(S.office).filter((t) => !t.x && t.due && t.due < TODAY).length;
+  if (ov) notes.push(ov + " overdue task" + (ov > 1 ? "s" : "") + " need attention.");
+  S.dates.filter((x) => daysTo(x) <= 7).sort((a, b) => daysTo(a) - daysTo(b)).forEach((x) => notes.push(`${x.n}: ${inTxt(daysTo(x)).toLowerCase()}.`));
+  const bu = S.bills.filter((b) => billState(b).s === 0).length; if (bu) notes.push(bu + " bill" + (bu > 1 ? "s are" : " is") + " overdue.");
+  if (hb.length) notes.push(`Best streak right now: ${hb.slice().sort((a, b) => b[1].cur - a[1].cur)[0][0].n} (${hb.slice().sort((a, b) => b[1].cur - a[1].cur)[0][1].cur} days).`);
+  S.goals.filter((g) => g.cur < g.target).forEach((g) => { if (g.due && fromKey(g.due) - fromKey(TODAY) < 30 * 864e5 && g.cur / g.target < .6) notes.push(`"${g.t}" is ${Math.round(g.cur / g.target * 100)}% done with under 30 days left.`); });
+  return h + pageCard("Things to look at", "", notes.length ? notes.map((n) => `<div class="li two"><span class="nm">${esc(n)}</span></div>`).join("") : '<div class="empty">Nothing needs attention.</div>');
+}
+function settings() {
+  let h = `<section class="card"><h2>Profile</h2><form data-form="profile" style="display:grid;gap:var(--s-3)"><label class="f">Your name<input name="name" value="${esc(S.name)}" maxlength="30"></label><label class="f">Currency<select name="cur">${["₹", "$", "€", "£"].map((c) => `<option${c === S.cur ? " selected" : ""}>${c}</option>`).join("")}</select></label><button class="btn">Save profile</button></form></section>`;
+  h += `<section class="card"><h2>Color palette</h2><div class="pals" role="group" aria-label="Color palette">${Object.keys(PAL).map((k) => { const l = PAL[k].l; return `<button class="pal" data-act="pal" data-v="${k}" aria-pressed="${(PAL[S.palette] ? S.palette : "orange") === k}"><span class="sw3"><i style="background:${l.brand}"></i><i style="background:${l.panel}"></i><i style="background:${l.bg}"></i></span>${PAL[k].name}</button>`; }).join("")}</div></section>`;
+  h += `<section class="card"><h2>Appearance</h2><div class="seg" role="group" aria-label="Theme">${["system", "light", "dark"].map((t) => `<button data-act="theme" data-v="${t}" aria-pressed="${S.theme === t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div></section>`;
+  h += '<section class="card"><h2>Widgets<small>on, off, order</small></h2>';
+  S.order.forEach((k, i) => { h += `<div class="sw"><div class="l">${icon(k)}<a href="#${k}" class="u-mw0">${TITLES[k]}</a></div><div class="mv"><button class="lnk" data-act="mvup" data-k="${k}" aria-label="Move ${TITLES[k]} up"${i === 0 ? " disabled" : ""}>↑</button><button class="lnk" data-act="mvdn" data-k="${k}" aria-label="Move ${TITLES[k]} down"${i === S.order.length - 1 ? " disabled" : ""}>↓</button><button class="tg" data-act="on" data-k="${k}" aria-pressed="${!!S.on[k]}" aria-label="${TITLES[k]} on Home"></button></div></div>`; });
+  h += "</section>";
+  h += `<section class="card"><h2>Your data</h2><p class="note" style="margin-bottom:var(--s-3)">Everything is stored on this device. Copy the text below to back it up, or paste a backup to restore it.</p><textarea class="field" id="in-data" aria-label="Backup data" style="min-height:96px;font-size:var(--fs-xs)">${esc(JSON.stringify(S))}</textarea><div class="u-mt3 inline"><button class="btn sm" data-act="import">Restore from text</button><button class="btn sm ${U.confirm === "reset" ? "danger" : "ghost"}" data-act="reset">${U.confirm === "reset" ? "Confirm: reset all" : "Reset sample data"}</button></div><p class="u-mt2 note" id="imp-msg"></p></section>`;
+  return h;
+}
+
+/* ---------- render ---------- */
+const NAVOF = { "": "n-home", apps: "n-apps", insights: "n-ins", settings: "n-set" };
+function route() { const r = location.hash.slice(1); return r === "apps" || r === "insights" || r === "settings" || r === "search" || r === "personal" || r === "office" || PAGE[r] ? r : ""; }
+function render() {
+  S.events = S.events.filter((e) => !e.tid || taskOf(e)); // a deleted task takes its calendar event with it
+  const r = route(), main = $("main"), head = $("head");
+  ["n-home", "n-apps", "n-ins", "n-set"].forEach((id) => $(id).setAttribute("aria-current", NAVOF[r] === id ? "page" : "false"));
+  $("top").innerHTML = `<div class="logo"><span class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="9" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="5" rx="1.5"/><rect x="13.5" y="12" width="6.5" height="8" rx="1.5"/><rect x="4" y="16" width="6.5" height="4" rx="1.5"/></svg></span>Life</div><a class="ibtn" href="#search" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></a>`;
+  const tabPage = r === "" || r === "apps" || r === "insights" || r === "settings";
+  const names = { apps: "Widgets", insights: "Insights", settings: "Settings", search: "Search" };
+  if (r === "") {
+    const hr = new Date().getHours(), gr = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening", sc = score(), C = 2 * Math.PI * 34;
+    const due = S.personal.concat(S.office).filter((t) => !t.x && t.due && t.due <= TODAY).length;
+    head.innerHTML = "";
+    let h = `<section class="hero"><div class="hero-top"><div><div class="hi">${new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</div><h2>${gr}${S.name ? ", " + esc(S.name) : ""}</h2></div><div class="ring" role="img" aria-label="Life score ${sc} out of 100"><svg viewBox="0 0 84 84"><circle class="tr" cx="42" cy="42" r="34" fill="none" stroke-width="8"/><circle class="fg" cx="42" cy="42" r="34" fill="none" stroke-width="8" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - sc / 100)}"/></svg><b>${sc}</b></div></div><div class="hero-stats"><div class="hs"><b>${S.habits.filter((x) => x.done[TODAY]).length}/${S.habits.length}</b><span>Habits</span></div><div class="hs"><b>${due}</b><span>Tasks due</span></div><div class="hs"><b>${water(TODAY)}/${S.waterTarget}</b><span>Water</span></div></div></section>`;
+    // agenda
+    const ev = S.events.filter((e) => e.d === TODAY).sort((a, b) => (a.time < b.time ? -1 : 1)), tk = S.personal.map((t) => Object.assign({ k: "personal" }, t)).concat(S.office.map((t) => Object.assign({ k: "office" }, t))).filter((t) => !t.x && t.due && t.due <= TODAY).sort(sortOpen), bl = S.bills.filter((b) => billState(b).s <= 1);
+    let ag = "", dt = 0;
+    ev.filter((e) => !e.tid).forEach((e) => { ag += evRow(e); });
+    tk.slice(0, 4).forEach((t) => { ag += `<div class="li"><button class="chk" data-act="tgl" data-k="${t.k}" data-id="${t.id}" aria-label="Mark done: ${esc(t.t)}"></button><span class="nm">${esc(t.t)}</span>${prTag(t)}<span class="sub">${dueTxt(t)}</span></div>`; });
+    S.learn.filter((l) => l.due === TODAY && l.st === "active").forEach((l) => { dt++; ag += `<a class="li two" href="#learn"><span class="nm">Finish: ${esc(l.t)}</span><span class="tagp b">Target</span></a>`; });
+    S.proj.filter((x) => x.st !== "done").forEach((x) => { const row = (l, t, tag) => { dt++; ag += `<a class="li two" href="#proj" data-act="popen" data-id="${x.id}"><span class="nm">${l}: ${esc(t)}</span><span class="tagp ${tag === "Overdue" ? "h" : "b"}">${tag}</span><span class="sub">${esc(x.t)}</span></a>`; }; if (x.due === TODAY) row("Target", x.t, "Today"); x.ms.forEach((m) => { if (!m.x && m.due === TODAY) row("Milestone", m.t, "Today"); }); x.tasks.forEach((t) => { if (!t.x && t.due === TODAY) row("Task", t.t, "Today"); else if (!t.x && t.due && t.due < TODAY && x.st === "active") row("Task", t.t, "Overdue"); }); });
+    S.notes.filter((n) => n.rem === TODAY && n.st === "on").forEach((n) => { dt++; ag += `<a class="li two" href="#notes" data-act="nedit" data-id="${n.id}"><span class="nm">Note: ${esc(ntitle(n))}</span><span class="tagp b">Reminder</span></a>`; });
+    S.watch.filter((w) => w.plan === TODAY && w.st !== "done").forEach((w) => { dt++; ag += `<a class="li two" href="#watch"><span class="nm">Watch: ${esc(w.t)}</span><span class="tagp b">Tonight</span><span class="sub">${w.type === "Series" ? "Web series" : "Movie"}${w.plat ? " · " + esc(w.plat) : ""}</span></a>`; });
+    S.dates.filter((x) => daysTo(x) <= x.rem).sort((a, b) => daysTo(a) - daysTo(b)).forEach((x) => { const n = daysTo(x); dt++; ag += `<a class="li two" href="#dates"><span class="nm">${esc(x.n)}</span><span class="tagp ${n === 0 ? "ok" : "m"}">${inTxt(n)}</span><span class="sub">${x.kind === "Other" ? "Yearly date" : x.kind} · ${dateLabel(x, Number(nextOcc(x).slice(0, 4)))}</span></a>`; });
+    bl.forEach((b) => { ag += `<a class="li two" href="#bills"><span class="nm">${esc(b.n)} bill</span><span class="tagp ${billState(b).c}">${billState(b).t}</span><span class="sub">${money(b.a)}</span></a>`; });
+    h += `<section class="card"><h2>Today's agenda<small>${ev.filter((e) => !e.tid).length + Math.min(4, tk.length) + dt + bl.length} items</small></h2>${ag || '<div class="empty">Nothing urgent today.</div>'}</section>`;
+    S.order.forEach((k) => { if (S.on[k]) h += k === "personal" || k === "office" ? CARD.task(k) : CARD[k](); });
+    main.innerHTML = h;
+  } else if (r === "apps") {
+    head.innerHTML = '<div class="ptitle"><h1>Widgets</h1></div>';
+    main.innerHTML = '<div class="grid2">' + S.order.map((k) => `<a class="tilea${S.on[k] ? "" : " off"}" href="#${k}">${icon(k)}<div><b>${TITLES[k]}</b><span class="s">${liveStat(k)}</span><span class="s">${BLURB[k]}</span></div></a>`).join("") + "</div>";
+  } else if (r === "insights" || r === "settings") {
+    head.innerHTML = `<div class="ptitle"><h1>${names[r]}</h1></div>`;
+    main.innerHTML = r === "insights" ? insights() : settings();
+  } else if (r === "search") {
+    head.innerHTML = '<a class="back" href="#">‹ Home</a><div class="ptitle"><h1>Search</h1></div>';
+    main.innerHTML = `<input class="u-bgcard field" id="in-q" data-live="q" value="${esc(U.q)}" placeholder="Search everything" aria-label="Search everything"><section class="card" id="results">${searchResults()}</section>`;
+  } else {
+    const a = ADD[r];
+    head.innerHTML = `<a class="back" href="#">‹ Home</a><div class="ptitle"><h1>${TITLES[r]}</h1>${a ? `<button class="btn sm" data-act="new" data-type="${a[0]}" data-ctx="${a[1]}">+ Add</button>` : ""}</div>`;
+    main.innerHTML = r === "personal" || r === "office" ? PAGE.task(r) : PAGE[r]();
+  }
+  $("sheet").innerHTML = sheetHtml();
+  renderRing();
+  save();
+  const fi = document.querySelector("#sheet form input, #sheet form textarea"); if (fi && !U.sheetFocused) { fi.focus(); U.sheetFocused = 1; }
+  if (!U.sheet) U.sheetFocused = 0;
+}
+window.addEventListener("hashchange", () => { U.confirm = ""; U.sheet = null; window.scrollTo(0, 0); render(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && U.sheet) { U.sheet = null; U.confirm = ""; render(); } });
+
+// A habit with "water" in its name is ticked automatically once today's water reaches the target.
+function syncWaterHabit() {
+  const h = S.habits.find((x) => /water/i.test(x.n)); if (!h) return;
+  if (water(TODAY) >= S.waterTarget) h.done[TODAY] = 1; else delete h.done[TODAY];
+}
+
+/* ---------- ringing: alarms and calendar event alerts ---------- */
+let AC = null;
+function unlockAudio() { try { if (!AC) { const A = window.AudioContext || window.webkitAudioContext; if (A) AC = new A(); } if (AC && AC.state === "suspended") AC.resume(); } catch (e) {} }
+document.addEventListener("click", unlockAudio, true);
+document.addEventListener("keydown", unlockAudio, true);
+function beep() {
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+  if (!AC || AC.state !== "running") return;
+  const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+  o.type = "sine"; o.frequency.value = 880;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 0.5);
+}
+setInterval(() => { if (U.ring.length) beep(); }, 1200);
+function renderRing() {
+  const r = U.ring[0];
+  $("ring").innerHTML = !r ? "" : `<div class="scrim top"><div class="sheet ringbox" role="alertdialog" aria-modal="true" aria-label="${esc(r.title)}"><div class="muted">${r.kind === "alarm" ? "Alarm" : "Calendar event"}</div><div class="rtime">${esc(r.time)}</div><h2>${esc(r.title)}</h2><p class="note">${r.snoozed ? "Snoozed reminder" : r.kind === "event" ? (r.pre ? "Starts in " + r.pre + " min" : "Starting now") : ""}${U.ring.length > 1 ? " · +" + (U.ring.length - 1) + " more" : ""}</p><button class="btn block" data-act="rdismiss">Dismiss</button><button class="btn block ghost" data-act="rsnooze">Snooze ${r.snooze || 5} min</button></div></div>`;
+  const b = document.querySelector("#ring [data-act=rdismiss]"); if (b) b.focus();
+}
+function fire(item) {
+  U.ring.push(item); beep(); renderRing();
+  try { if (window.Notification && Notification.permission === "granted") new Notification(item.title, { body: item.kind === "event" ? (item.pre ? "Starts in " + item.pre + " min" : "Starting now") : "Alarm " + item.time }); } catch (e) {}
+}
+function tick() {
+  const now = new Date(), nk = key(now), tmr = key(new Date(now.getTime() + 864e5)), dow = (now.getDay() + 6) % 7;
+  let changed = false;
+  const once = (k, fn) => { if (S.fired[k]) return; S.fired[k] = nk; changed = true; fn(); };
+  S.alarms.forEach((a) => {
+    if (!a.on || (a.days.length && !a.days.includes(dow))) return;
+    const diff = now - new Date(nk + "T" + a.t + ":00");
+    if (diff >= 0 && diff < 120000) once("a" + a.id + nk + a.t, () => { fire({ kind: "alarm", title: a.label || "Alarm", time: a.t, snooze: a.snooze }); if (!a.days.length) a.on = 0; });
+  });
+  if (S.alerts.on) S.events.forEach((e) => {
+    if (!e.time || (e.d !== nk && e.d !== tmr)) return;
+    const tk = e.tid ? taskOf(e) : null; if (tk && tk.x) return;
+    const start = new Date(e.d + "T" + e.time + ":00"), lead = S.alerts.lead * 60000, base = "e" + e.id + e.d + e.time;
+    if (now >= start - lead && now < start) once(base + "p", () => fire({ kind: "event", title: e.t, time: e.time, pre: Math.max(1, Math.ceil((start - now) / 60000)), snooze: 5 }));
+    if (now >= start && now - start < 120000) once(base + "n", () => fire({ kind: "event", title: e.t, time: e.time, pre: 0, snooze: 5 }));
+  });
+  S.snz = S.snz.filter((z) => { if (z.at > now.getTime()) return true; fire(z.item); changed = true; return false; });
+  const old = key(ago(3)); Object.keys(S.fired).forEach((k) => { if (S.fired[k] < old) { delete S.fired[k]; changed = true; } });
+  if (changed) { if (U.sheet || (U.nview === "edit" && route() === "notes")) { renderRing(); save(); } else render(); } // do not wipe a form that is open
+}
+setInterval(tick, 1000);
+
+/* ---------- events ---------- */
+const arm = (tag) => { if (U.confirm === tag) { U.confirm = ""; return true; } U.confirm = tag; return false; };
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const a = b.dataset.act, id = b.dataset.id, k = b.dataset.k, d = b.dataset;
+  if (a === "scrim") { if (e.target !== b) return; U.sheet = null; U.confirm = ""; }
+  else if (a === "close") { U.sheet = null; U.confirm = ""; }
+  else if (a === "new" && d.type === "note") { newNote(); }
+  else if (a === "new") { U.confirm = ""; U.sheet = { type: d.type, ctx: d.ctx || "", id: "" }; U.sheetFocused = 0; }
+  else if (a === "edit") { U.confirm = ""; U.sheet = { type: d.type, ctx: d.ctx || "", id: id }; U.sheetFocused = 0; }
+  else if (a === "sdel") {
+    if (arm("sdel")) {
+      const T = TYPES[U.sheet.type], L = T.L(U.sheet.ctx), i = L.findIndex((x) => x.id === Number(U.sheet.id));
+      if (i >= 0) { const gone = L[i]; if (gone.tid) { const tt = taskOf(gone); if (tt) tt.cal = ""; } if (gone.bid) { const b = byId(S.bills, gone.bid); if (b && b.paid === MONTH && gone.d.slice(0, 7) === MONTH) b.paid = ""; } L.splice(i, 1); } // deleting a bill payment marks the bill unpaid
+      U.sheet = null;
+    }
+  }
+  else if (a === "hday") { U.confirm = ""; const h = byId(S.habits, id); if (h.done[d.d]) delete h.done[d.d]; else h.done[d.d] = 1; }
+  else if (a === "tgl") { const t = byId(S[k], id); t.x = t.x ? 0 : 1; t.f = t.x ? TODAY : null; S.proj.forEach((p) => p.tasks.forEach((pt) => { if (pt.ptid === t.id) { pt.x = t.x; pt.f = t.f; } })); }
+  else if (a === "evtask") { const tt = taskOf(byId(S.events, U.sheet.id)); if (tt) { tt.x = tt.x ? 0 : 1; tt.f = tt.x ? TODAY : null; } U.sheet = null; }
+  else if (a === "stg") { const t = byId(S.shop, id); t.x = t.x ? 0 : 1; }
+  else if (a === "bpaid") {
+    // Paying a bill records the expense in Money; un-paying removes it again.
+    const t = byId(S.bills, id);
+    if (t.paid === MONTH) { t.paid = ""; S.spend = S.spend.filter((x) => !(x.bid === t.id && x.d.slice(0, 7) === MONTH)); }
+    else { t.paid = MONTH; S.spend.unshift({ id: S.nid++, k: "x", a: t.a, l: t.n, c: "Bills", d: TODAY, bid: t.id }); }
+  }
+  else if (a === "tab") { U.tab[k] = d.v; U.confirm = ""; }
+  else if (a === "cat") { U.cat = d.v; }
+  else if (a === "dkind") { U.dkind = d.v; }
+  else if (a === "ltab") { U.ltab = d.v; }
+  else if (a === "popen") { if (b.tagName === "A") e.preventDefault(); U.pid = Number(id); U.pview = "detail"; U.sheet = null; if (location.hash !== "#proj") location.hash = "proj"; }
+  else if (a === "pback") { U.pview = "list"; }
+  else if (a === "pfilt") { U.pst = d.v; }
+  else if (a === "pmode") { U.pmode = d.v; }
+  else if (a === "psort") { const o = ["due", "pr", "prog", "new"]; U.psort = o[(o.indexOf(U.psort) + 1) % 4]; }
+  else if (a === "pmove") { const p = byId(S.proj, id), i = PST.findIndex((s) => s[0] === p.st) + Number(d.v); if (PST[i]) p.st = PST[i][0]; }
+  else if (a === "pstat") { const p = byId(S.proj, U.pid); p.st = d.v; }
+  else if (a === "ptgl") { const t = byId(byId(S.proj, U.pid).tasks, id); t.x = t.x ? 0 : 1; t.f = t.x ? TODAY : null; const pl = t.ptid && byId(S.personal, t.ptid); if (pl) { pl.x = t.x; pl.f = t.f; } }
+  else if (a === "ptpush") { const t = byId(byId(S.proj, U.pid).tasks, id), pr = byId(S.proj, U.pid), n = { id: S.nid++, t: t.t, p: t.p || "m", due: t.due || "", c: TODAY, x: 0, f: null, cal: "", time: "" }; S.personal.unshift(n); t.ptid = n.id; }
+  else if (a === "mtgl") { const m = byId(byId(S.proj, U.pid).ms, id); m.x = m.x ? 0 : 1; }
+  else if (a === "pudel") { byId(S.proj, U.pid).ups.splice(Number(d.i), 1); }
+  else if (a === "pnote") { const p = byId(S.proj, U.pid); if (!S.nfold.includes("Projects")) S.nfold.push("Projects"); const n = { id: S.nid++, t: p.t + " notes", body: "", items: [], lab: "Projects", pin: 0, st: "on", rem: "", m: Date.now(), tr: 0, pid: p.id }; S.notes.unshift(n); U.nfolder = "Projects"; openNote(n.id); }
+  else if (a === "pdup") { const p = byId(S.proj, U.pid), c = JSON.parse(JSON.stringify(p)); c.id = S.nid++; c.t = p.t + " (copy)"; c.st = "idea"; c.c = TODAY; c.ups = []; c.time = []; c.ms.forEach((m) => { m.id = S.nid++; m.x = 0; }); c.tasks.forEach((t) => { t.id = S.nid++; t.x = 0; t.f = null; delete t.ptid; }); c.links.forEach((l) => { l.id = S.nid++; }); S.proj.unshift(c); U.pid = c.id; }
+  else if (a === "nopen") { U.nfolder = d.v; U.nview = "list"; U.nq = ""; U.confirm = ""; }
+  else if (a === "nback") { if (U.nview === "edit") { const n = byId(S.notes, U.nid); if (n && !n.t.trim() && !n.body.trim() && !n.items.length) S.notes = S.notes.filter((x) => x !== n); U.nview = "list"; U.nmenu = 0; } else { U.nview = "folders"; U.nq = ""; } U.confirm = ""; }
+  else if (a === "nnew") { newNote(); }
+  else if (a === "nedit") { if (b.tagName === "A") e.preventDefault(); openNote(id); }
+  else if (a === "nmore") { U.nmenu = U.nmenu ? 0 : 1; }
+  else if (a === "npin") { const n = byId(S.notes, U.nid); n.pin = n.pin ? 0 : 1; n.m = Date.now(); }
+  else if (a === "nchk") { const n = byId(S.notes, U.nid); n.items.push({ t: "", x: 0 }); n.m = Date.now(); render(); const el = document.querySelector('[data-ni="' + (n.items.length - 1) + '"]'); if (el) el.focus(); return; }
+  else if (a === "ntgl") { const n = byId(S.notes, id), it = n.items[Number(d.i)]; it.x = it.x ? 0 : 1; n.m = Date.now(); }
+  else if (a === "nidel") { const n = byId(S.notes, U.nid); n.items.splice(Number(d.i), 1); n.m = Date.now(); }
+  else if (a === "ntrash") { const n = byId(S.notes, U.nid); n.st = "trash"; n.tr = Date.now(); n.pin = 0; U.nview = "list"; U.nmenu = 0; }
+  else if (a === "nrestore") { const n = byId(S.notes, id); n.st = "on"; n.m = Date.now(); }
+  else if (a === "ndelf") { if (arm("ndelf" + id)) S.notes = S.notes.filter((x) => x.id !== Number(id)); }
+  else if (a === "nempty") { if (arm("nempty")) S.notes = S.notes.filter((x) => x.st !== "trash"); }
+  else if (a === "ndup") { const n = byId(S.notes, U.nid), c = JSON.parse(JSON.stringify(n)); c.id = S.nid++; c.t = n.t + " (copy)"; c.pin = 0; c.tkid = 0; c.m = Date.now(); S.notes.unshift(c); U.nview = "list"; U.nmenu = 0; }
+  else if (a === "n2task") { const n = byId(S.notes, U.nid), t = { id: S.nid++, t: ntitle(n), p: "m", due: n.rem || "", c: TODAY, x: 0, f: null, cal: "", time: "" }; S.personal.unshift(t); n.tkid = t.id; }
+  else if (a === "nfdel") { if (arm("nfdel")) { S.notes.forEach((n) => { if (n.lab === U.nfolder && n.st === "on") { n.st = "trash"; n.tr = Date.now(); n.pin = 0; } }); S.nfold = S.nfold.filter((f) => f !== U.nfolder); U.nview = "folders"; U.nfolder = "All"; } }
+  else if (a === "wtgl") { const w = byId(S.watch, id); w.st = w.st === "done" ? "todo" : "done"; w.f = w.st === "done" ? TODAY : null; if (U.pick === w.id) U.pick = 0; }
+  else if (a === "wep") { const w = byId(S.watch, id); w.ep = (Number(w.ep) || 0) + 1; if (!w.se) w.se = 1; if (w.st === "todo") w.st = "doing"; }
+  else if (a === "wtab") { U.wtab = d.v; }
+  else if (a === "wtype") { U.wtype = d.v; U.pick = 0; }
+  else if (a === "wpick") { const c = S.watch.filter((w) => w.st === "todo" && (U.wtype === "All" || w.type === U.wtype) && w.id !== U.pick); if (c.length) U.pick = c[Math.floor(Math.random() * c.length)].id; }
+  else if (a === "wstart") { const w = byId(S.watch, id); w.st = "doing"; U.pick = 0; U.wtab = "doing"; }
+  else if (a === "wdis") { U.pick = 0; }
+  else if (a === "aon") { const al = byId(S.alarms, id); al.on = al.on ? 0 : 1; }
+  else if (a === "alon") { S.alerts.on = S.alerts.on ? 0 : 1; }
+  else if (a === "rdismiss") { U.ring.shift(); }
+  else if (a === "rsnooze") { const r = U.ring.shift(); if (r) S.snz.push({ at: Date.now() + (r.snooze || 5) * 60000, item: Object.assign({}, r, { snoozed: 1 }) }); }
+  else if (a === "rtest") { fire({ kind: "alarm", title: "Test alarm", time: hm(new Date()), snooze: 5 }); }
+  else if (a === "rtest2") { fire({ kind: "event", title: "Team standup", time: hm(new Date(Date.now() + 15 * 60000)), pre: 15, snooze: 5 }); }
+  else if (a === "notif") { try { Notification.requestPermission().then(render); } catch (x) {} }
+  else if (a === "on") { S.on[k] = !S.on[k]; }
+  else if (a === "mvup" || a === "mvdn") { const i = S.order.indexOf(k), j = a === "mvup" ? i - 1 : i + 1; if (j >= 0 && j < S.order.length) { S.order[i] = S.order[j]; S.order[j] = k; } }
+  else if (a === "theme") { S.theme = d.v; applyTheme(); }
+  else if (a === "pal") { S.palette = d.v; applyTheme(); }
+  else if (a === "clear") { if (arm("clr" + k)) S[k] = S[k].filter((t) => !t.x); }
+  else if (a === "clrshop") { if (arm("clrshop")) S.shop = S.shop.filter((t) => !t.x); }
+  else if (a === "reset") { if (arm("reset")) { S = seed(); applyTheme(); } }
+  else if (a === "water") { const n = Math.max(0, water(TODAY) + Number(d.d)); S.health.water[TODAY] = n; syncWaterHabit(); if (U.sheet) U.sheet = null; }
+  else if (a === "mood") { let en = S.journal.find((x) => x.d === TODAY); if (!en) { en = { id: S.nid++, d: TODAY, mood: 3, txt: "" }; S.journal.push(en); } en.mood = Number(d.m); }
+  else if (a === "cday") { U.day = d.d; }
+  else if (a === "cprev") { U.cal.m--; if (U.cal.m < 0) { U.cal.m = 11; U.cal.y--; } }
+  else if (a === "cnext") { U.cal.m++; if (U.cal.m > 11) { U.cal.m = 0; U.cal.y++; } }
+  else if (a === "import") {
+    try { const v = JSON.parse($("in-data").value); if (!v || !Array.isArray(v.habits) || !Array.isArray(v.order)) throw 0; S = v; applyTheme(); }
+    catch (x) { $("imp-msg").textContent = "That text is not a valid backup. Nothing was changed."; return; }
+  }
+  else return;
+  render();
+});
+document.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const f = e.target, d = f.dataset, els = f.elements;
+  if (d.form === "quick") {
+    const v = els.t.value.trim(); if (!v) return;
+    if (d.type === "task") S[d.ctx].unshift({ id: S.nid++, t: v, p: "m", due: "", c: TODAY, x: 0, f: null, cal: "", time: "" });
+    else if (d.type === "ptask") byId(S.proj, U.pid).tasks.push({ id: S.nid++, t: v, x: 0, p: "m", due: "", f: null });
+    else if (d.type === "pup") byId(S.proj, U.pid).ups.push({ d: TODAY, t: v });
+    else if (d.type === "nfolder") { if (!S.nfold.includes(v)) S.nfold.push(v); }
+    else if (d.type === "watch") S.watch.unshift({ id: S.nid++, t: v, type: els.type.value, plat: "", st: "todo", se: "", ep: "", rate: 0, plan: "", note: "", c: TODAY, f: null });
+    else S.shop.push({ id: S.nid++, t: v, q: "", x: 0 });
+  } else if (d.form === "profile") { S.name = els.name.value.trim(); S.cur = els.cur.value; }
+  else if (d.form === "sheet") {
+    const T = TYPES[d.type], v = {};
+    for (const fd of T.f()) {
+      if (fd.t === "days") { v[fd.n] = Array.from(f.querySelectorAll('input[name="days"]:checked')).map((x) => Number(x.value)); continue; }
+      const raw = els[fd.n].value.trim();
+      if (fd.t === "num") { v[fd.n] = raw === "" ? (fd.d !== undefined ? fd.d : 0) : parseFloat(raw); if (isNaN(v[fd.n]) || (fd.req && !(v[fd.n] > 0))) { els[fd.n].focus(); return; } }
+      else { v[fd.n] = fd.n === "mood" ? Number(raw) : raw; if (fd.req && !raw) { els[fd.n].focus(); return; } }
+    }
+    if (d.type === "bill") v.day = Math.min(31, Math.max(1, Math.round(v.day)));
+    if (d.type === "date") v.rem = Number(v.rem);
+    if (d.type === "alarm") v.snooze = Number(v.snooze);
+    if (d.type === "watch") v.rate = Number(v.rate);
+    if (d.type === "task" && v.cal === "1" && !v.due) v.due = TODAY; // a calendar event needs a date
+    let item;
+    if (T.custom) T.save(v, d.ctx);
+    else {
+      if (d.id) { item = byId(T.L(d.ctx), d.id); Object.assign(item, v); } else { item = Object.assign({ id: S.nid++ }, T.def(), v); T.L(d.ctx).unshift(item); }
+      if (d.type === "bill") S.spend.forEach((x) => { if (x.bid === item.id && x.d.slice(0, 7) === MONTH) { x.a = v.a; x.l = v.n; } }); // keep the linked payment in step
+      if (d.type === "task") syncTaskEvent(item, d.ctx);
+      if (d.type === "ptask" && item.ptid) { const pl = byId(S.personal, item.ptid); if (pl) { pl.t = item.t; pl.due = item.due || ""; } }
+      if (d.type === "watch") item.f = item.st === "done" ? (item.f || TODAY) : null; // watched date follows the status
+      if (d.type === "event" && item.tid) { const tt = taskOf(item); if (tt) { tt.t = item.t; tt.due = item.d; tt.time = item.time; } }
+    }
+    U.sheet = null; U.confirm = "";
+  } else return;
+  render();
+});
+document.addEventListener("keydown", (e) => {
+  const t = e.target; if (e.key !== "Enter" || !t.dataset || t.dataset.ni === undefined) return;
+  e.preventDefault(); const n = byId(S.notes, U.nid), i = Number(t.dataset.ni), has = t.value.trim();
+  if (has) n.items.splice(i + 1, 0, { t: "", x: 0 }); else n.items.splice(i, 1);
+  render(); const el = document.querySelector('[data-ni="' + (has ? i + 1 : i) + '"]'); if (el) el.focus();
+});
+document.addEventListener("input", (e) => {
+  const t = e.target; if (t.dataset && (t.dataset.nf || t.dataset.ni !== undefined)) { noteInput(t); return; } if (!t.dataset || !t.dataset.live) return;
+  U[t.dataset.live] = t.value;
+  if (t.dataset.live === "q") { $("results").innerHTML = searchResults(); return; }
+  const pos = t.selectionStart; render();
+  const n = $(t.id); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+});
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.id === "in-budget") { const v = parseFloat(t.value); if (v >= 0) { S.budget = v; render(); } }
+  else if (t.id === "in-lead") { S.alerts.lead = Number(t.value); render(); }
+  else if (t.id === "in-wt") { const v = parseInt(t.value, 10); if (v >= 1 && v <= 30) { S.waterTarget = v; syncWaterHabit(); render(); } }
+});
+applyTheme();
+render();
+</script>
