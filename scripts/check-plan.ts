@@ -1,7 +1,7 @@
 // Run: npx tsx scripts/check-plan.ts  (plain asserts: the review, the notification plan, budgets and subscriptions)
 import assert from "node:assert/strict";
 import { dateKey, todayKey } from "../src/lib/date";
-import { budgetRows } from "../src/lib/logic";
+import { budgetRows, rollAlarms } from "../src/lib/logic";
 import { perMonth, perYear, rollSubs } from "../src/lib/subs";
 import { plan } from "../src/lib/plan";
 import { review } from "../src/lib/review";
@@ -81,6 +81,7 @@ s.meds = [{ id: 2, n: "Vitamin D", dose: "1 tablet", t1: "08:00", t2: "", t3: "2
 const doses = () => plan(s, now).once.filter((o) => o.title === "Vitamin D");
 const n0 = doses().length;
 assert.ok(n0 >= 12 && n0 <= 14, "two dose times for about a week");
+assert.ok(doses().every((o) => o.exact), "medicine doses ask for exact delivery");
 s.meds[0].taken[dateKey(new Date(+now + 864e5))] = ["08:00"];
 assert.equal(doses().length, n0 - 1, "a ticked dose does not ring");
 s.meds[0].act = 0;
@@ -129,6 +130,7 @@ const later = new Date(+now + 3 * 864e5);
 assert.equal(plan(s, later).once.filter((o) => o.title === "Licence").length, 1, "the next-morning reminder is not repeated on later days");
 s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now + 80 * 864e5)), lead: 30 }];
 assert.ok(plan(s, now).once.some((o) => o.title === "Passport"), "a reminder 50 days ahead is scheduled without opening the app first");
+assert.ok(!plan(s, now).once.some((o) => o.title === "Passport" && (o.exact || o.ring)), "documents, bills and the like do not ask for exact delivery");
 s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now + 80 * 864e5)), lead: 30 }];
 s.meds = ["A", "B", "C"].map((n, i) => ({ id: 10 + i, n, dose: "", t1: "08:00", t2: "14:00", t3: "20:00", act: 1 as const, taken: {} }));
 s.bills = [{ id: 20, n: "Rent", a: 100, day: 1, paid: "" } as never];
@@ -140,4 +142,18 @@ s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now +
 s.alarms = [{ id: 2, t: "06:30", label: "Wake up", days: [], snooze: 5, on: 1 }];
 assert.ok(plan(s, now).once.some((o) => o.title === "Wake up" && o.ring), "alarms are marked ring");
 assert.ok(!plan(s, now).once.some((o) => o.title === "Passport" && o.ring), "other reminders are not");
+// a one-time alarm that rang while the app was closed switches itself off, and is not set for tomorrow
+const one = { id: 5, t: "07:00", label: "Once", days: [], snooze: 5, on: 1 as const };
+s = blank(); s.alarms = [{ ...one }];
+const d9 = new Date(2026, 5, 10, 9, 0, 0), d6 = new Date(2026, 5, 10, 6, 0, 0);
+rollAlarms(s, d6);
+assert.equal(s.alarms[0].on, 1, "armed before its time: stays on");
+rollAlarms(s, d9);
+assert.equal(s.alarms[0].on, 0, "its time passed while closed: switched off");
+s.alarms = [{ ...one }]; rollAlarms(s, d9);
+assert.equal(s.alarms[0].on, 1, "switched on after today's time: waits for tomorrow");
+rollAlarms(s, new Date(2026, 5, 11, 9, 0, 0));
+assert.equal(s.alarms[0].on, 0, "and is switched off once tomorrow's time has passed");
+s.alarms = [{ ...one, days: [0] }]; rollAlarms(s, d9);
+assert.equal(s.alarms[0].on, 1, "repeating alarms are left alone");
 console.log("plan checks passed");

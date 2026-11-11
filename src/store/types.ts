@@ -25,7 +25,7 @@ export type Project = {
   tasks: ProjTask[]; ms: { id: number; t: string; x: 0 | 1; due: string }[]; ups: { d: string; t: string }[];
   time: { id: number; d: string; h: number; t: string }[]; links: { id: number; t: string; u: string }[];
 };
-export type Alarm = { id: number; t: string; label: string; days: number[]; snooze: number; on: 0 | 1 };
+export type Alarm = { id: number; t: string; label: string; days: number[]; snooze: number; on: 0 | 1; /** One-time alarms: when it was switched on and for which time, so one that rang while the app was closed can be switched off. */ armed?: { at: number; t: string } };
 export type YDate = { id: number; n: string; kind: string; d: string; hy: "1" | ""; rem: number };
 export type Bill = { id: number; n: string; a: number; day: number; paid: string };
 /** A recurring service. next = next renewal date; act 0 = cancelled. */

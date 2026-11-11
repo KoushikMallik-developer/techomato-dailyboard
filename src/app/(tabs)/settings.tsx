@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Pressable, Share, View } from "react-native";
+import { useEffect, useState } from "react";
+import { AppState, Platform, Pressable, Share, View } from "react-native";
+import { allowExactAlarms, exactAlarmsAllowed, syncNotifications } from "../../lib/notify";
 import { Btn, Card, Chip, Chips, Input, LinkBtn, Note, Screen, Seg, T, Toggle } from "../../components/ui";
 import { TopBar } from "../../components/TopBar";
 import { useStore } from "../../store/store";
@@ -11,7 +12,14 @@ import { WIDGETS } from "../../widgets/registry";
 export default function Settings() {
   const { state, update, reset, replace } = useStore();
   const [name, setName] = useState(state.name);
-  const [sure, setSure] = useState(false), [text, setText] = useState(""), [msg, setMsg] = useState("");
+  const [sure, setSure] = useState(false), [text, setText] = useState(""), [msg, setMsg] = useState(""), [exact, setExact] = useState(true);
+  // Re-check on return from Android's own settings. After a grant the schedule is rebuilt, because alarms scheduled before it are only approximate.
+  useEffect(() => {
+    const check = () => { exactAlarmsAllowed().then(setExact).catch(() => {}); };
+    check();
+    const sub = AppState.addEventListener("change", (a) => { if (a === "active") check(); });
+    return () => sub.remove();
+  }, []);
   const move = (i: number, d: -1 | 1) => update((s) => { const j = i + d; if (j < 0 || j >= s.order.length) return; [s.order[i], s.order[j]] = [s.order[j], s.order[i]]; });
   const restore = () => {
     try {
@@ -62,6 +70,7 @@ export default function Settings() {
             <Toggle value={state.notif?.[k] !== false} onChange={(v) => update((s) => { s.notif = { ...s.notif, [k]: v }; })} label={`Remind me about ${label.toLowerCase()}`} />
           </View>
         ))}
+        {Platform.OS === "android" && !exact ? <><Note tone="bad">Alarms may ring late or not at all while the phone sleeps, because exact alarms are not allowed.</Note><Btn label="Allow exact alarms" onPress={() => { allowExactAlarms().then((ok) => { setExact(ok); if (ok) syncNotifications(state).catch(() => {}); }).catch(() => {}); }} /></> : null}
         <Note>Alarms, event alerts and yearly dates have their own switches. Reminders go out at 09:00; the phone must allow notifications.</Note>
       </Card>
       <Card title="Your data">

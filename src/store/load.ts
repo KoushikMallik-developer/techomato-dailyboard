@@ -1,5 +1,5 @@
 import { rollSubs } from "../lib/subs";
-import { purgeTrash, rollEvents } from "../lib/logic";
+import { purgeTrash, rollAlarms, rollEvents } from "../lib/logic";
 import { ALL_WIDGETS, seed } from "./seed";
 import { State } from "./types";
 
@@ -14,5 +14,6 @@ export function load(raw: string | null): State {
   purgeTrash(s);
   rollEvents(s);
   rollSubs(s);
+  rollAlarms(s);
   return s;
 }

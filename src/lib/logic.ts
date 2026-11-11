@@ -52,6 +52,16 @@ export function rollEvents(s: State) {
   const today = todayKey();
   s.events.forEach((e) => { if (e.rep && !e.tid) for (let i = 0; e.d < today && i < 800; i++) e.d = addRep(e.d, e.rep); });
 }
+/** A one-time alarm that rang while the app was closed never got switched off, and would be set again for tomorrow. Switch it off once its time has passed. */
+export function rollAlarms(s: State, now = new Date()) {
+  s.alarms.forEach((a) => {
+    if (!a.on || a.days.length) { delete a.armed; return; }
+    if (a.armed?.t !== a.t) a.armed = { at: +now, t: a.t }; // switched on, or the time was changed
+    const [h, m] = a.t.split(":").map(Number), due = new Date(a.armed.at);
+    due.setHours(h, m, 0, 0); if (+due <= a.armed.at) due.setDate(due.getDate() + 1);
+    if (+now - +due > 120000) { a.on = 0; delete a.armed; } // within two minutes the open app rings it itself
+  });
+}
 export const setTaskDone = (s: State, t: Task, x: 0 | 1) => {
   t.x = x; t.f = x ? todayKey() : null;
   const k: TaskListKey = s.personal.includes(t) ? "personal" : "office", list = s[k];

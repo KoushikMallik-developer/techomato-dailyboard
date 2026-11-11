@@ -3,7 +3,7 @@ import { AppState } from "react-native";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { todayKey } from "../lib/date";
 import { rollSubs } from "../lib/subs";
-import { rollEvents, taskOf } from "../lib/logic";
+import { rollAlarms, rollEvents, taskOf } from "../lib/logic";
 import { load } from "./load";
 import { seed } from "./seed";
 import { State } from "./types";
@@ -42,6 +42,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     fn(next);
     rollEvents(next);
     rollSubs(next);
+    rollAlarms(next);
     next.events = next.events.filter((e) => !e.tid || taskOf(next, e)); // a deleted task takes its calendar event with it
     put(next);
   }, [put]);

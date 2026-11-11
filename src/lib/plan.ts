@@ -3,7 +3,7 @@ import { State } from "../store/types";
 import { dateKey } from "./date";
 import { allTasks, daysTo, money, nextOcc, ntitle, taskOf } from "./logic";
 
-type Planned = { at: Date; title: string; body: string; ring?: boolean }; // ring: the app rings this one itself while it is open
+type Planned = { at: Date; title: string; body: string; ring?: boolean; exact?: boolean }; // ring: the app rings this one itself while it is open
 type Weekly = { weekday: number; hour: number; minute: number; title: string; body: string; ring?: boolean };
 type Daily = { hour: number; minute: number; title: string; body: string };
 const at9 = (k: string, back = 0) => { const d = new Date(k + "T09:00:00"); d.setDate(d.getDate() - back); return d; }; // morning reminders go out at 09:00
@@ -50,7 +50,7 @@ export function plan(s: State, now = new Date()): { once: Planned[]; weekly: Wee
   if (on("meds")) { // one-time items so a ticked dose does not ring; fewer days when there are many doses, so they do not crowd out other reminders
     const L = s.meds.filter((m) => m.act).map((m) => ({ m, ts: [...new Set([m.t1, m.t2, m.t3].filter((t) => /^\d{2}:\d{2}$/.test(t)))] })), per = L.reduce((n, x) => n + x.ts.length, 0), days = Math.max(1, Math.min(7, Math.floor(28 / Math.max(1, per))));
     L.forEach(({ m, ts }) => ts.forEach((t) => {
-      for (let i = 0; i < days; i++) { const d = new Date(now); d.setDate(d.getDate() + i); const k = dateKey(d), at = new Date(`${k}T${t}:00`); if (at > now && !m.taken[k]?.includes(t)) once.push({ at, title: m.n, body: m.dose ? `Take ${m.dose}` : "Time for your medicine" }); }
+      for (let i = 0; i < days; i++) { const d = new Date(now); d.setDate(d.getDate() + i); const k = dateKey(d), at = new Date(`${k}T${t}:00`); if (at > now && !m.taken[k]?.includes(t)) once.push({ at, title: m.n, body: m.dose ? `Take ${m.dose}` : "Time for your medicine", exact: true }); }
     }));
   }
   if (on("notes")) s.notes.filter((n) => n.st === "on" && n.rem).forEach((n) => { if (soon(at9(n.rem))) once.push({ at: at9(n.rem), title: ntitle(n), body: "Note reminder" }); });
