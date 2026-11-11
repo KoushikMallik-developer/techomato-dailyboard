@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DailyBoard",
-    "slug": "techomato-lifeboard",
+    "slug": "techomato-dailyboard",
     "scheme": "dailyboard",
     "version": "1.0.0",
     "orientation": "portrait",
