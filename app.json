@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DailyBoard",
-    "slug": "techomato-dailyboard",
+    "slug": "techomato-lifeboard",
     "scheme": "dailyboard",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -42,7 +42,17 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "router": {

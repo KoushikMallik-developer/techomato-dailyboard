@@ -121,7 +121,7 @@ function Detail({ id }: { id: number }) {
         <Hd title="Links" small={String(p.links.length)} action={<LinkBtn tone="brand" label="Add" onPress={() => openSheet("plink", String(p.id))} />} />
         {p.links.length ? p.links.map((l) => /^https?:\/\//i.test(l.u) ? (
           <View key={l.id} className="flex-row justify-between items-center min-h-hit">
-            <Pressable onPress={() => Linking.openURL(l.u).catch(() => {})} accessibilityRole="link" className="flex-1"><T tone="brand">{l.t || l.u}</T></Pressable>
+            <Pressable onPress={() => { if (/^https?:\/\//i.test(l.u)) Linking.openURL(l.u).catch(() => {}); }} accessibilityRole="link" className="flex-1"><T tone="brand">{l.t || l.u}</T></Pressable>
             <LinkBtn label="Edit" onPress={() => openSheet("plink", String(p.id), l.id)} />
           </View>
         ) : <Row key={l.id} title={l.t || l.u} right={<T size="sm" tone="muted">Not a web link</T>} onPress={() => openSheet("plink", String(p.id), l.id)} />) : <Empty text="Repos, docs, designs and references." />}

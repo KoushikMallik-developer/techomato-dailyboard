@@ -1,7 +1,6 @@
-import { cssInterop } from "nativewind";
-import { ComponentProps } from "react";
+import { ComponentProps, useState } from "react";
 import { Pressable } from "react-native";
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import { Easing, useReducedMotion } from "react-native-reanimated";
 
 /** Motion rules for the app: short, ease-out, never decorative. Everything checks the system "reduce motion" setting first. */
 export const EASE = Easing.out(Easing.cubic);
@@ -11,16 +10,13 @@ export const SPRING = { damping: 16, stiffness: 240 } as const;
 /** True when animations are allowed (the user has not asked the system to reduce motion). */
 export const useMotion = () => !useReducedMotion();
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-cssInterop(AnimatedPressable, { className: "style" });
-
-/** A Pressable that shrinks slightly while pressed and springs back. Takes className like any other component. */
+/** A Pressable that shrinks slightly while pressed. Takes className like any other component.
+ *  shortcut: plain Pressable with a state-driven scale (no spring), because an Animated(Pressable) wrapper dropped its styles on a real Android device; upgrade once that is understood. */
 export function Press({ scale = 0.97, onPressIn, onPressOut, style, ...rest }: ComponentProps<typeof Pressable> & { className?: string; scale?: number }) {
-  const v = useSharedValue(1), ok = useMotion();
-  const a = useAnimatedStyle(() => ({ transform: [{ scale: v.value }] }));
+  const [down, setDown] = useState(false), ok = useMotion();
   return (
-    <AnimatedPressable {...rest} style={[style as never, a]}
-      onPressIn={(e) => { if (ok) v.set(withTiming(scale, { duration: DUR.press })); onPressIn?.(e); }}
-      onPressOut={(e) => { if (ok) v.set(withSpring(1, { damping: 14, stiffness: 320 })); onPressOut?.(e); }} />
+    <Pressable {...rest} style={[style as never, down && ok ? { transform: [{ scale }], opacity: 0.7 } : null]}
+      onPressIn={(e) => { setDown(true); onPressIn?.(e); }}
+      onPressOut={(e) => { setDown(false); onPressOut?.(e); }} />
   );
 }

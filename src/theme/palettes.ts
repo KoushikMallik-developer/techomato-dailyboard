@@ -282,4 +282,4 @@ export const PALETTES: Record<string, { name: string; light: Colors; dark: Color
   },
 };
 
-export type PaletteId = keyof typeof PALETTES;
+

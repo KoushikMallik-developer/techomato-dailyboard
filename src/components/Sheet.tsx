@@ -50,6 +50,10 @@ export const TYPES: Record<string, Def> = {
   date: { name: "Yearly date", L: (s) => s.dates as unknown as Item[], f: () => [F("n", "Name or occasion", "text", { req: true }), F("kind", "Type", "sel", { o: [["Birthday", "Birthday"], ["Anniversary", "Anniversary"], ["Other", "Other"]], d: "Birthday" }), F("d", "Date", "date", { req: true, d: T0() }), F("hy", "Year", "sel", { o: [["1", "Year is known (show age or years)"], ["", "Ignore the year"]], d: "1" }), F("rem", "Remind me", "sel", { o: [[0, "On the day"], [1, "1 day before"], [3, "3 days before"], [7, "1 week before"], [14, "2 weeks before"]], d: 3 })], def: () => ({}) },
   bill: { name: "Bill", L: (s) => s.bills as unknown as Item[], f: () => [F("n", "Bill name", "text", { req: true }), F("a", "Amount", "num", { req: true }), F("day", "Due day of month (1-31)", "num", { req: true, d: 1 })], def: () => ({ paid: "" }) },
   sub: { name: "Subscription", L: (s) => s.subs as unknown as Item[], f: () => [F("n", "Service name", "text", { req: true }), F("a", "Price", "num", { req: true }), F("cycle", "Billed", "sel", { o: [["w", "Every week"], ["m", "Every month"], ["y", "Every year"]], d: "m" }), F("next", "Next renewal", "date", { req: true, d: T0() }), F("act", "Status", "sel", { o: [[1, "Active"], [0, "Cancelled"]], d: 1 })], def: () => ({}) },
+  doc: { name: "Document", L: (s) => s.docs as unknown as Item[], f: () => [F("n", "Name, e.g. Car insurance", "text", { req: true }), F("kind", "Type", "sel", { o: ["Insurance", "Licence", "PUC", "Warranty", "Passport", "Other"].map((k) => [k, k] as Opt), d: "Insurance" }), F("exp", "Expiry date", "date", { req: true, d: T0() }), F("lead", "Remind me", "sel", { o: [[7, "7 days before"], [15, "15 days before"], [30, "30 days before"], [60, "60 days before"]], d: 30 })], def: () => ({ seen: T0() }) },
+  trip: { name: "Trip", L: (s) => s.trips as unknown as Item[], f: () => [F("n", "Trip name", "text", { req: true }), F("from", "Start date", "date", { req: true, d: T0() }), F("to", "End date", "date", { req: true, d: T0() }), F("budget", "Budget (optional)", "num", { d: 0 }), F("spent", "Spent so far", "num", { d: 0 })], def: () => ({ items: [] }) },
+  titem: { name: "Packing item", L: (s, c) => (byId(s.trips, c)?.items ?? []) as unknown as Item[], f: () => [F("t", "Item", "text", { req: true })], def: () => ({ x: 0 }) },
+  med: { name: "Medicine", L: (s) => s.meds as unknown as Item[], f: () => [F("n", "Medicine", "text", { req: true }), F("dose", "Dose, e.g. 1 tablet (optional)"), F("t1", "First dose", "time", { req: true, d: "08:00" }), F("t2", "Second dose (optional)", "time"), F("t3", "Third dose (optional)", "time"), F("act", "Status", "sel", { o: [[1, "Taking"], [0, "Paused"]], d: 1 })], def: () => ({ taken: {} }) },
   shop: { name: "Item", L: (s) => s.shop as unknown as Item[], f: () => [F("t", "Item", "text", { req: true }), F("q", "Quantity (optional)")], def: () => ({ x: 0 }) },
   weight: { name: "Weight (kg)", L: (s) => s.weight as unknown as Item[], f: () => [F("v", "Weight in kg", "num", { req: true }), F("d", "Date", "date", { d: T0() })], def: () => ({}) },
   sleep: { name: "Sleep", f: () => [F("h", "Hours slept", "num", { req: true }), F("d", "Night ending on", "date", { d: T0() })], save(s, v) { s.health.sleep[v.d] = v.h; } },
@@ -59,7 +63,7 @@ export const TYPES: Record<string, Def> = {
 const QUICK: [string, string, string, string][] = [
   ["task", "personal", "Personal task", "personal"], ["task", "office", "Office task", "office"], ["spend", "", "Expense or income", "spend"], ["event", "", "Event", "calendar"],
   ["date", "", "Yearly date", "dates"], ["alarm", "", "Alarm", "alarms"], ["note", "", "Note", "notes"], ["learn", "", "Learning item", "learn"], ["proj", "", "Project", "proj"],
-  ["watch", "", "Movie or series", "watch"], ["journal", "", "Journal entry", "journal"], ["shop", "", "Shopping item", "shop"], ["sub", "", "Subscription", "subs"], ["habit", "", "New habit", "habits"],
+  ["watch", "", "Movie or series", "watch"], ["journal", "", "Journal entry", "journal"], ["shop", "", "Shopping item", "shop"], ["sub", "", "Subscription", "subs"], ["doc", "", "Document expiry", "docs"], ["trip", "", "Trip", "trips"], ["med", "", "Medicine", "meds"], ["habit", "", "New habit", "habits"],
   ["goal", "", "New goal", "goals"], ["sleep", "", "Log sleep", "health"], ["weight", "", "Log weight", "health"],
 ];
 
@@ -148,6 +152,7 @@ function Form({ req }: { req: NonNullable<ReturnType<typeof useUi>["ui"]["sheet"
         v[f.n] = raw;
       }
     }
+    if (req.type === "trip" && v.to < v.from) { fail("to", "End date is before the start date"); return; }
     if (req.type === "bill") v.day = Math.min(31, Math.max(1, Math.round(v.day)));
     if (req.type === "task" && (v.cal === "1" || v.rep) && !v.due) v.due = todayKey(); // a calendar event or a repeat needs a date
     if (req.type === "plink" && v.u && !/^https?:\/\//i.test(v.u)) { fail("u", "Web address must start with https://"); return; }

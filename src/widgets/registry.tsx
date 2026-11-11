@@ -7,6 +7,7 @@ import { BillsCard, BillsPage, HealthCard, HealthPage, JournalCard, JournalPage,
 import { DatesCard, DatesPage, GoalsCard, GoalsPage, LearnCard, LearnPage, SpendCard, SpendPage } from "./money";
 import { NotesCard, NotesPage } from "./notes";
 import { ProjCard, ProjPage } from "./projects";
+import { DocsCard, DocsPage, MedsCard, MedsPage, TripsCard, TripsPage } from "./more";
 import { SubsCard, SubsPage } from "./subs";
 import { TasksCard, TasksPage } from "./tasks";
 
@@ -40,5 +41,8 @@ export const WIDGETS: Record<WidgetKey, Widget> = {
   watch: { key: "watch", title: "Watchlist", blurb: "Movies and series to watch", icon: "film-outline", Card: WatchCard, Page: WatchPage, add: ["watch", ""] },
   bills: { key: "bills", title: "Bills", blurb: "Due dates and paid status", icon: "receipt-outline", Card: BillsCard, Page: BillsPage, add: ["bill", ""] },
   subs: { key: "subs", title: "Subscriptions", blurb: "Renewals and yearly cost", icon: "repeat-outline", Card: SubsCard, Page: SubsPage, add: ["sub", ""] },
+  docs: { key: "docs", title: "Documents", blurb: "Insurance, licence, PUC, warranty expiry", icon: "car-outline", Card: DocsCard, Page: DocsPage, add: ["doc", ""] },
+  trips: { key: "trips", title: "Trips", blurb: "Dates, packing list and budget", icon: "airplane-outline", Card: TripsCard, Page: TripsPage, add: ["trip", ""] },
+  meds: { key: "meds", title: "Medicines", blurb: "Dose times and daily tick-off", icon: "medkit-outline", Card: MedsCard, Page: MedsPage, add: ["med", ""] },
   shop: { key: "shop", title: "Shopping list", blurb: "Groceries and errands", icon: "cart-outline", Card: ShopCard, Page: ShopPage },
 };

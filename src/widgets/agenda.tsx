@@ -1,14 +1,16 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { View } from "react-native";
 import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, G } from "react-native-svg";
-import { Card, Row, T, Tag } from "../components/ui";
+import { Card, LinkBtn, Row, T, Tag } from "../components/ui";
 import { todayKey } from "../lib/date";
 import { allTasks, billState, dateLabel, daysTo, dueTxt, evSort, inTxt, money, nextOcc, ntitle, score, sortOpen, water } from "../lib/logic";
 import { useStore } from "../store/store";
 import { DUR, useMotion } from "../theme/motion";
 import { useTheme } from "../theme/ThemeProvider";
 import { EvRow } from "./calendar";
+import { useToggle } from "./habits";
+import { useDoses } from "./more";
 import { go, CheckRow, PrioTag } from "./shared";
 import { useOpenNote } from "./notes";
 import { useOpenProject } from "./projects";
@@ -55,8 +57,9 @@ export function Hero() {
 /** Everything that needs attention today, pulled from every widget. */
 export function Agenda() {
   const { state } = useStore();
-  const toggle = useTaskToggle();
+  const toggle = useTaskToggle(), toggleHabit = useToggle(), { slots, toggle: takeDose } = useDoses();
   const openNote = useOpenNote(), openProject = useOpenProject();
+  const [all, setAll] = useState(false);
   const t = todayKey();
   const ev = state.events.filter((e) => e.d === t && !e.tid).sort(evSort);
   const tk = (["personal", "office"] as const).flatMap((k) => state[k].map((x) => ({ k, x }))).filter((r) => !r.x.x && r.x.due && r.x.due <= t).sort((a, b) => sortOpen(a.x, b.x));
@@ -64,7 +67,15 @@ export function Agenda() {
   const rows: { key: string; node: ReactNode }[] = [];
   const add = (key: string, node: ReactNode) => rows.push({ key, node });
   ev.forEach((e) => add("e" + e.id, <EvRow e={e} />));
-  tk.slice(0, 4).forEach(({ k, x }) => { const d = dueTxt(x); add("t" + x.id, <CheckRow on={false} onToggle={() => toggle(k, x.id)} label={`Mark done: ${x.t}`} title={x.t} sub={d.text} subTone={d.late ? "bad" : "muted"} tag={<PrioTag p={x.p} />} />); });
+  tk.forEach(({ k, x }) => { const d = dueTxt(x); add("t" + x.id, <CheckRow on={false} onToggle={() => toggle(k, x.id)} label={`Mark done: ${x.t}`} title={x.t} sub={d.text} subTone={d.late ? "bad" : "muted"} tag={<PrioTag p={x.p} />} />); });
+  state.habits.filter((h) => !h.done[t]).forEach((h) => add("h" + h.id, <CheckRow on={false} onToggle={() => toggleHabit(h.id, t)} label={`Mark done: ${h.n}`} title={h.n} sub={h.rt ? "Habit · " + h.rt : "Habit"} />));
+  slots.filter((x) => !x.on).forEach((x) => add("m" + x.m.id + x.t, <CheckRow on={false} onToggle={() => takeDose(x.m.id, x.t)} label={`Taken: ${x.m.n} at ${x.t}`} title={x.m.dose ? `${x.m.n} · ${x.m.dose}` : x.m.n} sub={"Medicine · " + x.t} />));
+  const glasses = water(state)(t);
+  if (glasses < state.waterTarget) add("water", <Row title="Water" sub={`${glasses}/${state.waterTarget} glasses so far`} right={<Tag label="Today" tone="b" />} onPress={() => go("health")} />);
+  state.goals.filter((g) => g.due === t && g.cur < g.target).forEach((g) => add("g" + g.id, <Row title={"Goal: " + g.t} sub={`${g.cur}/${g.target} ${g.unit}`} right={<Tag label="Due" tone="b" />} onPress={() => go("goals")} />));
+  state.subs.filter((x) => x.act && x.next === t).forEach((x) => add("s" + x.id, <Row title={x.n + " renews"} sub={money(state, x.a)} right={<Tag label="Today" tone="m" />} onPress={() => go("subs")} />));
+  state.docs.filter((d) => d.exp === t).forEach((d) => add("c" + d.id, <Row title={d.n + " expires"} sub={d.kind} right={<Tag label="Today" tone="h" />} onPress={() => go("docs")} />));
+  state.trips.filter((x) => x.from === t).forEach((x) => add("r" + x.id, <Row title={"Trip starts: " + x.n} sub={`${x.items.filter((i) => i.x).length}/${x.items.length} packed`} right={<Tag label="Today" tone="b" />} onPress={() => go("trips")} />));
   state.learn.filter((l) => l.due === t && l.st === "active").forEach((l) => add("l" + l.id, <Row title={"Finish: " + l.t} right={<Tag label="Target" tone="b" />} onPress={() => go("learn")} />));
   state.proj.filter((x) => x.st !== "done").forEach((x) => {
     const row = (k: string, l: string, title: string, tag: string) => add("p" + x.id + k, <Row title={`${l}: ${title}`} sub={x.t} right={<Tag label={tag} tone={tag === "Overdue" ? "h" : "b"} />} onPress={() => openProject(x.id)} />);
@@ -78,7 +89,8 @@ export function Agenda() {
   bl.forEach((b) => add("b" + b.id, <Row title={b.n + " bill"} sub={money(state, b.a)} right={<Tag label={billState(b).t} tone={billState(b).c} />} onPress={() => go("bills")} />));
   return (
     <Card title="Today's agenda" small={`${rows.length} items`}>
-      {rows.length ? rows.map((r) => <View key={r.key}>{r.node}</View>) : <T tone="muted" className="py-4 text-center">Nothing urgent today.</T>}
+      {rows.length ? (all ? rows : rows.slice(0, 8)).map((r) => <View key={r.key}>{r.node}</View>) : <T tone="muted" className="py-4 text-center">Nothing urgent today.</T>}
+      {rows.length > 8 ? <View className="items-start pt-1"><LinkBtn tone="brand" label={all ? "Show less" : `Show all ${rows.length}`} onPress={() => setAll(!all)} /></View> : null}
     </Card>
   );
 }

@@ -5,7 +5,11 @@ import { budgetRows } from "../src/lib/logic";
 import { perMonth, perYear, rollSubs } from "../src/lib/subs";
 import { plan } from "../src/lib/plan";
 import { review } from "../src/lib/review";
-import { seed } from "../src/store/seed";
+import { load } from "../src/store/load";
+import { addSample, hasSample, removeSample, seed as blank } from "../src/store/seed";
+
+/** The checks below were written against sample data, so they start from it. */
+const seed = () => { const x = blank(); addSample(x); return x; };
 
 const today = todayKey();
 const now = new Date(); now.setHours(6, 0, 0, 0); // plan() is checked as if it were 06:00 today
@@ -67,4 +71,73 @@ s.notes.forEach((n) => { n.body += " edited"; });
 assert.equal(JSON.stringify(plan(s, now)), sig, "ticking a habit or editing a note does not change the schedule");
 s.alarms.push({ id: 99, t: "23:59", label: "x", days: [], snooze: 5, on: 1 });
 assert.notEqual(JSON.stringify(plan(s, now)), sig, "adding an alarm changes the schedule");
+// documents and medicines
+s = seed();
+s.alarms = []; s.events = []; s.dates = []; s.personal = []; s.office = []; s.notes = []; s.habits = []; s.bills = []; s.subs = [];
+s.docs = [{ id: 1, n: "Car insurance", kind: "Insurance", exp: dateKey(new Date(+now + 10 * 864e5)), lead: 7 }];
+assert.ok(plan(s, now).once.some((o) => o.title === "Car insurance" && o.body === "Expires in 7 days"), "document reminder 7 days before expiry");
+assert.ok(plan(s, now).once.some((o) => o.title === "Car insurance" && o.body === "Expires today"), "and on the day");
+s.meds = [{ id: 2, n: "Vitamin D", dose: "1 tablet", t1: "08:00", t2: "", t3: "20:30", act: 1, taken: {} }];
+const doses = () => plan(s, now).once.filter((o) => o.title === "Vitamin D");
+const n0 = doses().length;
+assert.ok(n0 >= 12 && n0 <= 14, "two dose times for about a week");
+s.meds[0].taken[dateKey(new Date(+now + 864e5))] = ["08:00"];
+assert.equal(doses().length, n0 - 1, "a ticked dose does not ring");
+s.meds[0].act = 0;
+assert.equal(doses().length, 0, "a paused medicine schedules nothing");
+s.notif = { docs: false };
+assert.ok(!plan(s, now).once.some((o) => o.title === "Car insurance"), "document reminders can be switched off");
+// a new install is empty, and sample data can be added and removed without touching the user's own entries
+s = blank();
+assert.equal(s.habits.length + s.spend.length + s.notes.length + s.proj.length + s.weight.length, 0, "no data by default");
+assert.ok(!hasSample(s));
+s.shop.push({ id: s.nid++, t: "Mine", q: "", x: 0 });
+s.health.water["2020-01-01"] = 3;
+addSample(s);
+assert.ok(hasSample(s) && s.habits.length > 0 && s.proj.length > 0, "sample data fills the widgets");
+const once = JSON.stringify(s.habits);
+addSample(s);
+assert.equal(JSON.stringify(s.habits.map((h) => h.n)), JSON.stringify(JSON.parse(once).map((h: { n: string }) => h.n)), "adding twice does not duplicate");
+s.health.water[Object.keys(s.health.water).find((k) => s.sampleHealth!.water.includes(k))!] = 9; // sample day, changed by the user: still removed with the sample
+const rent = s.bills.find((b) => b.n === "Rent")!;
+s.spend.push({ id: s.nid++, k: "x", a: 1, l: "Rent", c: "Bills", d: "2020-01-01", bid: rent.id }); // a payment the user made on a sample bill
+s.spend.push({ id: s.nid++, k: "x", a: 2, l: "Gym", c: "Bills", d: "2020-01-01", bid: 12345 }); // a payment on a bill the user has since deleted
+removeSample(s);
+assert.ok(!s.spend.some((x) => x.bid === rent.id), "a payment on a sample bill goes with the bill");
+assert.ok(s.spend.some((x) => x.bid === 12345), "payment history of a deleted user bill stays");
+assert.ok(!hasSample(s) && s.habits.length === 0 && s.spend.length === 1 && s.events.length === 0, "sample removed, including linked events; only the user payment is left");
+assert.deepEqual(s.shop.map((x) => x.t), ["Mine"], "the user's own item stays");
+assert.deepEqual(s.health.water, { "2020-01-01": 3 }, "only the user's water day stays");
+// load(): what survives a start-up
+s = blank();
+s.shop.push({ id: 7, t: "Keep me", q: "", x: 0 });
+const old = JSON.parse(JSON.stringify(s)) as Record<string, unknown>;
+delete old.docs; delete old.trips; delete old.meds; delete old.subs; // a state saved before those lists existed
+old.order = (old.order as string[]).filter((k) => k !== "docs").concat("gone"); // a widget the app no longer has
+const back = load(JSON.stringify(old));
+assert.deepEqual([back.docs, back.trips, back.meds, back.subs], [[], [], [], []], "missing lists start empty");
+assert.deepEqual(back.shop.map((x) => x.t), ["Keep me"], "the user's data wins over the defaults");
+assert.ok(!back.order.includes("gone" as never) && back.order.includes("docs") && back.on.docs, "old widgets dropped, new ones added and switched on");
+assert.throws(() => load('{"habits":[]}'), "a wrong shape is rejected, not replaced");
+assert.throws(() => load("{not json"), "unreadable text is rejected, not replaced");
+assert.equal(load(null).habits.length, 0, "no saved data gives an empty app");
+// reminders: one-time ones are scheduled well ahead, and alarms and event alerts are marked for the app to ring itself
+s = blank();
+s.docs = [{ id: 1, n: "Licence", kind: "Licence", exp: dateKey(new Date(+now + 10 * 864e5)), lead: 30, seen: dateKey(now) }];
+assert.equal(plan(s, now).once.filter((o) => o.title === "Licence").length, 2, "added inside the lead window: one next-morning reminder plus expiry day");
+const later = new Date(+now + 3 * 864e5);
+assert.equal(plan(s, later).once.filter((o) => o.title === "Licence").length, 1, "the next-morning reminder is not repeated on later days");
+s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now + 80 * 864e5)), lead: 30 }];
+assert.ok(plan(s, now).once.some((o) => o.title === "Passport"), "a reminder 50 days ahead is scheduled without opening the app first");
+s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now + 80 * 864e5)), lead: 30 }];
+s.meds = ["A", "B", "C"].map((n, i) => ({ id: 10 + i, n, dose: "", t1: "08:00", t2: "14:00", t3: "20:00", act: 1 as const, taken: {} }));
+s.bills = [{ id: 20, n: "Rent", a: 100, day: 1, paid: "" } as never];
+s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now + 25 * 864e5)), lead: 7 }];
+assert.ok(plan(s, now).once.some((o) => o.title === "Passport"), "many medicines do not crowd out other reminders");
+assert.ok(plan(s, now).once.length <= 60, "stays under the notification limit");
+s.meds = []; s.bills = [];
+s.docs = [{ id: 1, n: "Passport", kind: "Passport", exp: dateKey(new Date(+now + 80 * 864e5)), lead: 30 }];
+s.alarms = [{ id: 2, t: "06:30", label: "Wake up", days: [], snooze: 5, on: 1 }];
+assert.ok(plan(s, now).once.some((o) => o.title === "Wake up" && o.ring), "alarms are marked ring");
+assert.ok(!plan(s, now).once.some((o) => o.title === "Passport" && o.ring), "other reminders are not");
 console.log("plan checks passed");

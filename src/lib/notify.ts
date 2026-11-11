@@ -1,6 +1,6 @@
 // Local notifications for alarms, calendar event alerts and yearly dates (native only).
 // The schedule is rebuilt from the saved state whenever it changes, so it always matches what the app shows.
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { State } from "../store/types";
 import { plan } from "./plan";
 
@@ -22,17 +22,21 @@ export async function ensurePermission(): Promise<boolean> {
 export async function setupNotifications() {
   if (!notificationsSupported) return;
   const N = await mod();
-  N.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
+  N.setNotificationHandler({ handleNotification: async (n) => { const quiet = !!n.request.content.data?.ring && AppState.currentState === "active"; return { shouldShowBanner: !quiet, shouldShowList: !quiet, shouldPlaySound: !quiet, shouldSetBadge: false }; } }); // the app rings alarms and event alerts itself while open
   if (Platform.OS === "android") await N.setNotificationChannelAsync(CHANNEL, { name: "Alarms and reminders", importance: N.AndroidImportance.MAX, vibrationPattern: [0, 250, 250, 250], sound: "default" });
 }
 
-export async function syncNotifications(s: State) {
+/** One sync at a time: a second one cancelling in the middle of the first would leave stale or doubled reminders. */
+let queue: Promise<unknown> = Promise.resolve();
+export const syncNotifications = (s: State): Promise<void> => (queue = queue.catch(() => {}).then(() => run(s))) as Promise<void>;
+
+async function run(s: State) {
   if (!notificationsSupported) return;
   const N = await mod();
   if (!(await N.getPermissionsAsync()).granted) return;
   await N.cancelAllScheduledNotificationsAsync();
   const p = plan(s), ch = Platform.OS === "android" ? { channelId: CHANNEL } : {};
   for (const d of p.daily) await N.scheduleNotificationAsync({ content: { title: d.title, body: d.body, sound: "default" }, trigger: { type: N.SchedulableTriggerInputTypes.DAILY, hour: d.hour, minute: d.minute, ...ch } });
-  for (const w of p.weekly) await N.scheduleNotificationAsync({ content: { title: w.title, body: w.body, sound: "default" }, trigger: { type: N.SchedulableTriggerInputTypes.WEEKLY, weekday: w.weekday, hour: w.hour, minute: w.minute, ...ch } });
-  for (const o of p.once) await N.scheduleNotificationAsync({ content: { title: o.title, body: o.body, sound: "default" }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: o.at, ...ch } });
+  for (const w of p.weekly) await N.scheduleNotificationAsync({ content: { title: w.title, body: w.body, sound: "default", data: { ring: !!w.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.WEEKLY, weekday: w.weekday, hour: w.hour, minute: w.minute, ...ch } });
+  for (const o of p.once) await N.scheduleNotificationAsync({ content: { title: o.title, body: o.body, sound: "default", data: { ring: !!o.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: o.at, ...ch } });
 }

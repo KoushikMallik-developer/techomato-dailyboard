@@ -219,7 +219,7 @@ export function QuickAdd({ value, onChange, onAdd, placeholder, extra }: { value
 }
 
 /** Tappable list row: title and sub on the left, tag or value on the right. */
-export function Row({ title, sub, right, onPress, done }: { title: string; sub?: string; right?: ReactNode; onPress?: () => void; done?: boolean; last?: boolean }) {
+export function Row({ title, sub, right, onPress, done }: { title: string; sub?: string; right?: ReactNode; onPress?: () => void; done?: boolean }) {
   return (
     <Pressable disabled={!onPress} onPress={onPress} accessibilityRole={onPress ? "button" : undefined} className="relative min-h-hit flex-row items-center justify-between gap-3 py-2.5 active:opacity-70">
       <Divider />

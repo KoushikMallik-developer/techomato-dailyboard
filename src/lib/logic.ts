@@ -16,7 +16,6 @@ export const dleft = (k: string) => { const n = dnum(k); return n < 0 ? Math.abs
 export const byId = <T extends { id: number }>(l: T[], id: number | string) => l.find((x) => x.id === Number(id));
 export const MOODS = ["", "Rough", "Low", "Okay", "Good", "Great"];
 export const CATS = ["Food", "Transport", "Bills", "Shopping", "Health", "Other"];
-export const PRIO_NAME = { h: "High", m: "Medium", l: "Low" } as const;
 
 /* ---------- habits ---------- */
 export function streaks(done: Record<string, 1>) {
@@ -211,6 +210,7 @@ export function searchResults(s: State, q0: string): Hit[] | null {
   s.events.forEach((e) => add("calendar", e.t, "Event · " + dl(e.d)));
   s.spend.forEach((e) => add("spend", e.l, "Money · " + money(s, e.a))); s.journal.forEach((e) => add("journal", e.txt, "Journal · " + dl(e.d)));
   s.subs.forEach((x) => add("subs", x.n, "Subscription")); s.bills.forEach((b) => add("bills", b.n, "Bill")); s.shop.forEach((t) => add("shop", t.t, "Shopping"));
+  s.docs.forEach((d) => add("docs", d.n, "Document · " + d.kind)); s.trips.forEach((x) => add("trips", x.n, "Trip · " + dl(x.from))); s.meds.forEach((x) => add("meds", x.n, "Medicine"));
   return R.slice(0, 30);
 }
 
@@ -224,6 +224,8 @@ export function liveStat(s: State, k: string): string {
     proj: s.proj.filter((x) => x.st === "active").length + " in progress", spend: money(s, spentOn(s)(t)) + " today", goals: s.goals.length + " goals",
     health: (s.health.water[t] || 0) + "/" + s.waterTarget + " glasses", journal: s.journal.some((e) => e.d === t) ? "Logged today" : "Not logged",
     subs: s.subs.filter((x) => x.act).length + " active",
+    docs: s.docs.filter((d) => dnum(d.exp) <= d.lead).length + " need attention", trips: s.trips.filter((x) => x.to >= t).length + " coming up",
+    meds: s.meds.filter((x) => x.act).length + " active",
     bills: s.bills.filter((b) => b.paid !== m).length + " unpaid", shop: openN(s.shop) + " to get",
   };
   return r[k] ?? "";

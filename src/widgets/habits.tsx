@@ -6,7 +6,7 @@ import { dl, streaks } from "../lib/logic";
 import { useStore } from "../store/store";
 import { useUi } from "../store/ui";
 
-function useToggle() {
+export function useToggle() {
   const { update } = useStore();
   return (id: number, k: string) => update((s) => { const x = s.habits.find((y) => y.id === id); if (!x) return; if (x.done[k]) delete x.done[k]; else x.done[k] = 1; });
 }

@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { AppState } from "react-native";
 import { todayKey } from "../lib/date";
 import { RingItem } from "./types";
 
@@ -17,6 +18,14 @@ export function UiProvider({ children }: { children: ReactNode }) {
     sheet: null, day: todayKey(), cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
     nview: "folders", nfolder: "All", nid: 0, pview: "list", pid: 0, ring: [],
   }));
+  useEffect(() => { // after midnight or a long background, jump back to today
+    let last = todayKey();
+    const sub = AppState.addEventListener("change", (a) => {
+      const t = todayKey();
+      if (a === "active" && t !== last) { last = t; const d = new Date(); setUi((u) => ({ ...u, day: t, cal: { y: d.getFullYear(), m: d.getMonth() } })); }
+    });
+    return () => sub.remove();
+  }, []);
   const set = useCallback((p: Partial<Ui> | ((u: Ui) => Partial<Ui>)) => setUi((u) => ({ ...u, ...(typeof p === "function" ? p(u) : p) })), []);
   const openSheet = useCallback((type: string, ctx = "", id: string | number = "") => set({ sheet: { type, ctx, id: String(id) } }), [set]);
   const closeSheet = useCallback(() => set({ sheet: null }), [set]);

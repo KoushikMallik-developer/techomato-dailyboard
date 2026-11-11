@@ -13,7 +13,7 @@ One app that replaces a pile of small apps: habits, tasks, calendar, alarms, mon
 - **Registry** (`src/widgets/registry.tsx`): every widget is `{ key, title, blurb, icon, Card?, Page? }`. Home shows `Card` for enabled widgets in the user's order. `app/w/[key].tsx` renders `Page`. A widget with no `Page` shows as "Coming soon". To add a widget: write `src/widgets/<name>.tsx`, add its data to `State`, register it.
 - **Store** (`src/store`): one `State` object in React context. `update(fn)` deep-copies, applies `fn`, and saves to AsyncStorage after 300 ms. Cross-widget links are plain code inside the `update` call, so they stay in one transaction.
 - **Theme** (`src/theme`): `ThemeProvider` picks the palette and light/dark. Screens read `useTheme().c`. Spacing, radius and type sizes are in `tokens.ts`. Do not hardcode colours or sizes.
-- **Schema changes**: the storage key (`techomato-lifeboard:v1`) is bumped while the app is a prototype, which drops old data. Before real users, replace this with migrations.
+- **Schema changes**: the storage key (`techomato-lifeboard:v2`) is bumped only for a break that cannot be fixed with defaults, which drops old data. New lists are filled in by `load()` in `src/store/load.ts`, so adding a widget does not need a bump.
 
 ## Data model (`src/store/types.ts`)
 All shapes are in `types.ts` and mirror `function seed()` in `reference/life-dashboard-preview.html`. All rules live as pure functions in `src/lib/logic.ts`.

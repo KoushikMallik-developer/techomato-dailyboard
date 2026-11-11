@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { DateTimeInput } from "../components/DateTimeInput";
 import { Btn, Card, Chip, Chips, Check, Empty, Input, LinkBtn, Note as NoteText, QuickAdd, T } from "../components/ui";
@@ -54,10 +54,23 @@ function Editor({ id }: { id: number }) {
   const n = byId(state.notes, id);
   const [menu, setMenu] = useState(false);
   const [title, setTitle] = useState(n?.t ?? ""), [body, setBody] = useState(n?.body ?? "");
+  // Typing is saved 500 ms after the last key, not on every key: each save copies and redraws the whole app. Other edits flush it first so they apply in order.
+  const queue = useRef<((x: Note) => void)[]>([]), timer = useRef<ReturnType<typeof setTimeout> | null>(null), flushRef = useRef<() => void>(() => {});
+  const flush = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const q = queue.current;
+    queue.current = [];
+    if (q.length) update((s) => { const x = byId(s.notes, id); if (x) { q.forEach((f) => f(x)); x.m = Date.now(); } });
+  };
+  useEffect(() => { flushRef.current = flush; });
+  useEffect(() => () => flushRef.current(), []); // leaving the editor saves what is waiting
   if (!n) return null;
-  const mut = (fn: (x: Note) => void) => update((s) => { const x = byId(s.notes, id); if (x) { fn(x); x.m = Date.now(); } });
+  const mut = (fn: (x: Note) => void) => { flush(); update((s) => { const x = byId(s.notes, id); if (x) { fn(x); x.m = Date.now(); } }); };
+  const later = (fn: (x: Note) => void) => { queue.current.push(fn); if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(flush, 500); };
   const fo = ui.nfolder, back = fo === "Trash" ? "Recently Deleted" : fo === "All" ? "Notes" : fo;
   const leave = () => {
+    flush();
     update((s) => { const x = byId(s.notes, id); if (x && !x.t.trim() && !x.body.trim() && !x.items.length) s.notes = s.notes.filter((y) => y !== x); }); // an empty note is not kept
     set({ nview: "list" });
   };
@@ -86,12 +99,12 @@ function Editor({ id }: { id: number }) {
         </Card>
       ) : null}
       <T size="xs" tone="muted" className="text-center">{new Date(n.m).toLocaleString([], { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} · {nwords(n)} words</T>
-      <TextInput value={title} onChangeText={(v) => { setTitle(v); mut((x) => { x.t = v; }); }} placeholder="Title" placeholderTextColor={c.muted} maxLength={120} accessibilityLabel="Title" className={`${input} font-i7 text-[26px]`} />
-      <TextInput value={body} onChangeText={(v) => { setBody(v); mut((x) => { x.body = v; }); }} placeholder="Note" placeholderTextColor={c.muted} multiline maxLength={8000} accessibilityLabel="Note text" textAlignVertical="top" className={`${input} min-h-note text-base`} />
+      <TextInput value={title} onChangeText={(v) => { setTitle(v); later((x) => { x.t = v; }); }} placeholder="Title" placeholderTextColor={c.muted} maxLength={120} accessibilityLabel="Title" className={`${input} font-i7 text-[26px]`} />
+      <TextInput value={body} onChangeText={(v) => { setBody(v); later((x) => { x.body = v; }); }} placeholder="Note" placeholderTextColor={c.muted} multiline maxLength={8000} accessibilityLabel="Note text" textAlignVertical="top" className={`${input} min-h-note text-base`} />
       {n.items.map((it, i) => (
         <View key={i} className="flex-row items-center gap-3 min-h-hit">
           <Check on={!!it.x} label={`${it.x ? "Uncheck" : "Check"} item ${i + 1}`} onPress={() => mut((x) => { x.items[i].x = x.items[i].x ? 0 : 1; })} />
-          <TextInput defaultValue={it.t} onChangeText={(v) => mut((x) => { x.items[i].t = v; })} placeholder="List item" placeholderTextColor={c.muted} maxLength={120} accessibilityLabel={`Checklist item ${i + 1}`}
+          <TextInput defaultValue={it.t} onChangeText={(v) => later((x) => { x.items[i].t = v; })} placeholder="List item" placeholderTextColor={c.muted} maxLength={120} accessibilityLabel={`Checklist item ${i + 1}`}
             onSubmitEditing={() => mut((x) => { if (x.items[i].t.trim()) x.items.splice(i + 1, 0, { t: "", x: 0 }); else x.items.splice(i, 1); })} blurOnSubmit={false}
             className={`flex-1 font-i4 text-base text-ink ${it.x ? "line-through opacity-60" : ""}`} />
           <LinkBtn label="×" onPress={() => mut((x) => { x.items.splice(i, 1); })} />

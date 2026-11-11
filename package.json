@@ -8,14 +8,15 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.2.1",
     "babel-preset-expo": "~58.0.0",
-    "expo": "~58.0.23",
+    "expo": "~58.0.24",
+    "expo-build-properties": "~58.0.12",
     "expo-constants": "~58.0.15",
     "expo-font": "~58.0.11",
-    "expo-linking": "~58.0.16",
-    "expo-notifications": "~58.1.8",
-    "expo-router": "~58.0.30",
-    "expo-splash-screen": "~58.0.13",
-    "expo-status-bar": "~58.0.4",
+    "expo-linking": "~58.0.17",
+    "expo-notifications": "~58.1.9",
+    "expo-router": "~58.0.31",
+    "expo-splash-screen": "~58.0.14",
+    "expo-status-bar": "~58.0.5",
     "nativewind": "^4.2.7",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -32,6 +33,7 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -41,7 +43,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "tsx scripts/check-plan.ts && tsx scripts/check-repeat.ts"
   },
   "private": true
 }

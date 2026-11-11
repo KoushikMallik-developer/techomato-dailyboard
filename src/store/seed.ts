@@ -4,17 +4,20 @@ import { Prio, State, TaskListKey, WidgetKey } from "./types";
 
 export const ALL_WIDGETS: WidgetKey[] = [
   "habits", "personal", "office", "calendar", "alarms", "dates", "spend", "goals", "learn", "proj",
-  "health", "journal", "notes", "watch", "bills", "shop", "subs",
+  "health", "journal", "notes", "watch", "bills", "shop", "subs", "docs", "trips", "meds",
 ];
 
-/** First-run sample data. Mirrors seed() in reference/life-dashboard-preview.html. */
-export function seed(): State {
+/** Sample items get ids from this number up. The app hands out ids from 100, so the two ranges never meet and sample items can be told apart. */
+const SAMPLE = 1_000_000;
+
+/** Sample data. Mirrors seed() in reference/life-dashboard-preview.html. */
+function sample(): State {
   const TODAY = todayKey(), MONTH = monthKey();
   const S: State = {
-    nid: 100, name: "Koushik", cur: "₹", theme: "dark", palette: "orange", order: ALL_WIDGETS.slice(), on: {}, budget: 30000, waterTarget: 8,
+    nid: SAMPLE, name: "", cur: "₹", theme: "dark", palette: "orange", order: ALL_WIDGETS.slice(), on: {}, budget: 30000, waterTarget: 8,
     habits: [], personal: [], office: [], spend: [], goals: [], journal: [], events: [], watch: [], notes: [], learn: [], proj: [],
     nfold: ["Notes", "Work", "Personal", "Ideas", "Travel", "Learning"], alarms: [], fired: {}, snz: [], alerts: { on: 1, lead: 15 },
-    dates: [], bills: [], shop: [], subs: [], catBudgets: { Food: 8000, Transport: 3000, Shopping: 5000 }, weight: [], health: { water: {}, sleep: {} },
+    dates: [], bills: [], shop: [], subs: [], docs: [], trips: [], meds: [], catBudgets: { Food: 8000, Transport: 3000, Shopping: 5000 }, weight: [], health: { water: {}, sleep: {} },
   };
   ALL_WIDGETS.forEach((k) => { S.on[k] = true; });
   const id = () => S.nid++;
@@ -120,4 +123,35 @@ export function seed(): State {
   ([[28, 71.8], [21, 71.5], [14, 71.2], [7, 71.4], [1, 70.9]] as [number, number][]).forEach((r) => S.weight.push({ id: id(), d: key(ago(r[0])), v: r[1] }));
   ([["Spotify", 119, "m", 6], ["iCloud storage", 75, "m", 12], ["YouTube Premium", 1290, "y", 80]] as [string, number, "m" | "y", number][]).forEach((r) => S.subs.push({ id: id(), n: r[0], a: r[1], cycle: r[2], next: dk(r[3]), act: 1 }));
   return S;
+}
+
+/** What a new install starts with: no data. */
+export function seed(): State {
+  const S = sample();
+  const blank: State = { ...S, nid: 100, budget: 0, catBudgets: {}, nfold: S.nfold, weight: [], health: { water: {}, sleep: {} } };
+  LISTS.forEach((k) => { (blank as unknown as Record<string, unknown>)[k] = []; });
+  return blank;
+}
+
+const LISTS = ["habits", "personal", "office", "spend", "goals", "journal", "events", "watch", "notes", "learn", "proj", "alarms", "dates", "bills", "shop", "subs", "docs", "trips", "meds", "weight"] as const;
+type Listed = Record<(typeof LISTS)[number], { id: number }[]>;
+
+export const hasSample = (s: State) => LISTS.some((k) => (s as unknown as Listed)[k].some((x) => x.id >= SAMPLE));
+
+/** Drops every sample item and the water and sleep days the sample added. The user's own entries stay. */
+export function removeSample(s: State) {
+  const L = s as unknown as Listed, bills = new Set(s.bills.filter((b) => b.id >= SAMPLE).map((b) => b.id));
+  LISTS.forEach((k) => { L[k] = L[k].filter((x) => x.id < SAMPLE); });
+  (["water", "sleep"] as const).forEach((h) => (s.sampleHealth?.[h] ?? []).forEach((d) => { delete s.health[h][d]; }));
+  delete s.sampleHealth;
+  s.spend = s.spend.filter((x) => !(x.bid && bills.has(x.bid))); // a payment made on a sample bill goes with the bill; payments on bills the user deleted stay
+}
+
+/** Adds the sample data next to what is there. Days the user already logged water or sleep for are left alone. */
+export function addSample(s: State) {
+  removeSample(s);
+  const S = sample(), L = s as unknown as Listed, from = S as unknown as Listed, added = { water: [] as string[], sleep: [] as string[] };
+  LISTS.forEach((k) => L[k].push(...from[k]));
+  (["water", "sleep"] as const).forEach((h) => Object.entries(S.health[h]).forEach(([d, v]) => { if (s.health[h][d] === undefined) { s.health[h][d] = v; added[h].push(d); } }));
+  s.sampleHealth = added;
 }

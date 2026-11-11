@@ -5,6 +5,7 @@ import { TopBar } from "../../components/TopBar";
 import { useStore } from "../../store/store";
 import { State } from "../../store/types";
 import { PALETTES } from "../../theme/palettes";
+import { addSample, hasSample, removeSample } from "../../store/seed";
 import { WIDGETS } from "../../widgets/registry";
 
 export default function Settings() {
@@ -12,7 +13,6 @@ export default function Settings() {
   const [name, setName] = useState(state.name);
   const [sure, setSure] = useState(false), [text, setText] = useState(""), [msg, setMsg] = useState("");
   const move = (i: number, d: -1 | 1) => update((s) => { const j = i + d; if (j < 0 || j >= s.order.length) return; [s.order[i], s.order[j]] = [s.order[j], s.order[i]]; });
-  const backup = JSON.stringify(state);
   const restore = () => {
     try {
       const v = JSON.parse(text) as State;
@@ -56,7 +56,7 @@ export default function Settings() {
         ))}
       </Card>
       <Card title="Reminders" small="phone notifications">
-        {([["habits", "Habit reminder times"], ["bills", "Bills (day before and on the day)"], ["tasks", "Task due dates"], ["notes", "Note reminders"], ["subs", "Subscription renewals (day before)"]] as const).map(([k, label]) => (
+        {([["habits", "Habit reminder times"], ["bills", "Bills (day before and on the day)"], ["tasks", "Task due dates"], ["notes", "Note reminders"], ["subs", "Subscription renewals (day before)"], ["docs", "Document expiry dates"], ["meds", "Medicine times"]] as const).map(([k, label]) => (
           <View key={k} className="min-h-12 flex-row items-center justify-between gap-3 py-1">
             <T className="flex-1">{label}</T>
             <Toggle value={state.notif?.[k] !== false} onChange={(v) => update((s) => { s.notif = { ...s.notif, [k]: v }; })} label={`Remind me about ${label.toLowerCase()}`} />
@@ -67,11 +67,13 @@ export default function Settings() {
       <Card title="Your data">
         <Note>Everything is stored on this device. Share a backup to keep a copy, or paste a backup below to restore it.</Note>
         <View className="mt-3 gap-3">
-          <Btn ghost label="Share a backup" onPress={() => { Share.share({ message: backup }).catch(() => {}); }} />
+          <Btn ghost label="Share a backup" onPress={() => { Share.share({ message: JSON.stringify(state) }).catch(() => {}); }} />
           <Input value={text} onChangeText={setText} placeholder="Paste a backup here" multiline accessibilityLabel="Backup data" className="min-h-24 pt-3 text-xs" />
           <Btn label="Restore from text" onPress={restore} />
           {msg ? <Note tone={msg.startsWith("That") ? "bad" : "ok"}>{msg}</Note> : null}
-          <Btn ghost={!sure} danger={sure} label={sure ? "Confirm: reset all" : "Reset to sample data"} onPress={() => { if (!sure) { setSure(true); return; } reset(); setSure(false); }} />
+          <Btn ghost label={hasSample(state) ? "Remove sample data" : "Load sample data"} onPress={() => update((s) => { if (hasSample(s)) removeSample(s); else addSample(s); })} />
+          <Note>Sample data fills every widget with made-up items so you can try the app. Removing it keeps everything you added yourself. Sample items you edited are removed too.</Note>
+          <Btn ghost={!sure} danger={sure} label={sure ? "Confirm: erase all my data" : "Erase all data"} onPress={() => { if (!sure) { setSure(true); return; } reset(); setSure(false); }} />
         </View>
       </Card>
     </Screen>

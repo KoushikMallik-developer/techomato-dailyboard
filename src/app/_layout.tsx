@@ -35,9 +35,10 @@ function Shell({ onReady }: { onReady: () => void }) {
 }
 
 export default function Root() {
-  const [fonts] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  const [loaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
   const [ready, setReady] = useState(false), [showSplash, setShowSplash] = useState(true);
   const onReady = useCallback(() => setReady(true), []), onGone = useCallback(() => setShowSplash(false), []);
+  const fonts = loaded || !!fontError; // a font that fails to load must not leave the app on the splash screen
   useEffect(() => { if (fonts) SplashScreen.hide(); }, [fonts]); // hand over from the native splash to BrandSplash
   if (!fonts) return null;
   return (
