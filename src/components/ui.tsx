@@ -127,9 +127,9 @@ export function Seg<V extends string>({ value, options, onChange }: { value: V; 
   );
 }
 
-export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
+export function Chip({ label, on, onPress, a11y }: { label: string; on?: boolean; onPress: () => void; a11y?: string }) {
   return (
-    <Press onPress={onPress} scale={0.94} accessibilityRole="button" accessibilityState={{ selected: !!on }} hitSlop={{ top: 10, bottom: 10 }}
+    <Press onPress={onPress} scale={0.94} accessibilityRole="button" accessibilityLabel={a11y ?? label} accessibilityState={{ selected: !!on }} hitSlop={{ top: 10, bottom: 10 }}
       className={cx("rounded-full border px-[11px] py-1 active:opacity-70", on ? "border-brand bg-brand" : "border-line bg-transparent")}>
       <T size="sm" tone={on ? "onBrand" : "muted"}>{label}</T>
     </Press>

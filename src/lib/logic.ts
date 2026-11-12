@@ -1,15 +1,17 @@
 // Pure helpers ported from the HTML preview. They take the State (or its parts) and never touch storage.
 import { CalEvent, Note, Project, State, Task, TaskListKey, Learn, Bill, YDate, Watch } from "../store/types";
-import { addRep, ago, dateKey, dayLabel, fromKey, todayKey } from "./date";
+import { addRep, ago, dateKey, dayLabel, fromKey, occursOn, todayKey } from "./date";
 
+const minutes = (t: string) => +t.slice(0, 2) * 60 + +t.slice(3);
 const pad = (n: number) => String(n).padStart(2, "0");
 export const key = dateKey;
+export const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 export const dk = (n: number) => dateKey(ago(-n)); // n days from today
 export const monthKey = () => todayKey().slice(0, 7);
 export const dl = dayLabel;
 export const hm = (d: Date) => pad(d.getHours()) + ":" + pad(d.getMinutes());
 export const num = (n: number) => (Math.round(n * 10) / 10).toLocaleString();
-export const money = (s: State, n: number) => (n < 0 ? "-" : "") + s.cur + Math.round(Math.abs(n)).toLocaleString(s.cur === "₹" ? "en-IN" : "en-US");
+export const money = (s: State, n: number) => (n < 0 ? "-" : "") + s.cur + Math.abs(Math.round(n * 100) / 100).toLocaleString(s.cur === "₹" ? "en-IN" : "en-US", { maximumFractionDigits: 2 });
 export const agoTxt = (k: string) => { const n = Math.round((+fromKey(todayKey()) - +fromKey(k)) / 864e5); return n === 0 ? "today" : n === 1 ? "yesterday" : n + " days ago"; };
 export const dnum = (k: string) => Math.round((+fromKey(k) - +fromKey(todayKey())) / 864e5);
 export const dleft = (k: string) => { const n = dnum(k); return n < 0 ? Math.abs(n) + " days overdue" : n === 0 ? "due today" : n + " days left"; };
@@ -23,7 +25,7 @@ export function streaks(done: Record<string, 1>) {
   let s = done[today] ? 0 : 1, cur = 0;
   while (done[key(ago(s + cur))]) cur++;
   let best = 0, run = 0;
-  for (let i = 400; i >= 0; i--) { if (done[key(ago(i))]) { run++; if (run > best) best = run; } else run = 0; }
+  for (let i = Math.max(400, cur); i >= 0; i--) { if (done[key(ago(i))]) { run++; if (run > best) best = run; } else run = 0; }
   let n30 = 0; for (let i = 0; i < 30; i++) if (done[key(ago(i))]) n30++;
   return { cur, best, rate: Math.round((n30 / 30) * 100) };
 }
@@ -32,10 +34,16 @@ export function streaks(done: Record<string, 1>) {
 export const allTasks = (s: State) => s.personal.concat(s.office);
 const PR = { h: 0, m: 1, l: 2 };
 export function sortOpen(a: Task, b: Task) { const x = a.due || "9999", y = b.due || "9999"; return x < y ? -1 : x > y ? 1 : PR[a.p] - PR[b.p]; }
+/** Overdue once the due date has passed, or, when the task has a time, once that time has passed. A task has no end time. */
+export const isLate = (t: Task, now = new Date()) => {
+  if (t.x || !t.due) return false;
+  const today = dateKey(now);
+  return t.due < today || (t.due === today && !!t.cal && !!t.time && t.time <= String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"));
+};
 export function dueTxt(t: Task): { text: string; late: boolean } {
   if (!t.due || t.x) return { text: "", late: false };
   const today = todayKey(), tm = t.cal && t.time ? " · " + t.time : "";
-  if (t.due < today) return { text: "Overdue · " + dl(t.due) + (t.rep ? " · Repeats" : ""), late: true };
+  if (isLate(t)) return { text: "Overdue · " + dl(t.due) + tm + (t.rep ? " · Repeats" : ""), late: true };
   return { text: (t.due === today ? "Due today" : "Due " + dl(t.due)) + tm + (t.rep ? " · Repeats" : ""), late: false };
 }
 /** A task shown on the calendar has a linked event (event.tid) that mirrors its title, date and time. */
@@ -47,6 +55,41 @@ export function syncTaskEvent(s: State, t: Task, k: TaskListKey) {
   } else if (ev) s.events = s.events.filter((e) => e !== ev);
 }
 export const taskOf = (s: State, e: CalEvent): Task | undefined => (e.tk && e.tid ? s[e.tk].find((t) => t.id === e.tid) : undefined);
+/** How a calendar event repeats; an event linked to a task repeats the way the task does. */
+export const repOf = (s: State, e: CalEvent) => (e.tid ? taskOf(s, e)?.rep : e.rep);
+/** Later occurrences of repeating events (and of repeating tasks shown on the calendar) that fall on `day`. Each one is a copy of its event dated `day`. A finished task does not repeat. */
+export function repeatsOn(s: State, day: string): CalEvent[] {
+  return s.events.flatMap((e) => {
+    const t = e.tid ? taskOf(s, e) : undefined, rep = repOf(s, e);
+    return rep && !(t && t.x) && occursOn(rep, e.d, day) ? [{ ...e, d: day }] : [];
+  });
+}
+export type Block = { e: CalEvent; start: number; end: number; lane: number; n: number };
+
+/** Places one day's timed events side by side where they overlap. */
+export function layout(list: CalEvent[]): Block[] {
+  const items = list.filter((e) => e.time).map((e) => { const start = minutes(e.time); return { e, start, end: Math.min(1440, start + (e.tid ? 30 : e.dur || 60)) }; }).sort((a, b) => a.start - b.start || b.end - a.end);
+  const out: Block[] = [], laneEnds: number[] = [];
+  let group: Omit<Block, "n">[] = [], groupEnd = 0;
+  const flush = () => { const n = Math.max(...group.map((x) => x.lane)) + 1; group.forEach((x) => out.push({ ...x, n })); group = []; laneEnds.length = 0; };
+  items.forEach((x) => {
+    if (group.length && x.start >= groupEnd) flush();
+    let lane = laneEnds.findIndex((end) => end <= x.start); if (lane < 0) lane = laneEnds.length;
+    laneEnds[lane] = x.end; group.push({ ...x, lane }); groupEnd = Math.max(groupEnd, x.end);
+  });
+  if (group.length) flush();
+  return out;
+}
+
+/** A timed event whose end (start plus length) has passed. All-day events and task events (a task has no end time) never end. */
+export const ended = (e: CalEvent, now = new Date()) => !!e.time && !e.tid && +now >= +new Date(e.d + "T" + e.time + ":00") + (e.dur || 60) * 60000;
+export const eventsOn = (s: State, day: string): CalEvent[] => s.events.filter((e) => e.d === day).concat(repeatsOn(s, day));
+/** Events on the `days` days starting at `from`, repeats included, in date and time order. */
+export function eventsBetween(s: State, from: string, days: number): CalEvent[] {
+  const out: CalEvent[] = [];
+  for (let i = 0; i < days; i++) out.push(...eventsOn(s, dateKey(new Date(+fromKey(from) + i * 864e5))));
+  return out.sort(evSort);
+}
 /** Repeating events move to their next date once the day has passed. Events linked to a task follow the task instead. */
 export function rollEvents(s: State) {
   const today = todayKey();
@@ -161,6 +204,8 @@ export function billDue(b: Bill) { const m = monthKey(), last = new Date(Number(
 export function billState(b: Bill): { t: string; c: Tone; s: number } {
   const d = billDue(b), today = todayKey();
   if (b.paid === monthKey()) return { t: "Paid", c: "ok", s: 9 };
+  const prev = new Date(); prev.setDate(1); prev.setMonth(prev.getMonth() - 1);
+  if (b.from && b.from <= dateKey(prev).slice(0, 7) && b.paid < dateKey(prev).slice(0, 7)) return { t: "Overdue", c: "h", s: 0 }; // last month's bill was never paid
   if (d < today) return { t: "Overdue", c: "h", s: 0 };
   if (d === today) return { t: "Due today", c: "m", s: 1 };
   return { t: "In " + dnum(d) + "d", c: "", s: 2 };
@@ -196,7 +241,7 @@ export function lastDays(n: number, f: (k: string) => number): Pt[] {
 
 /* ---------- calendar and agenda ---------- */
 export function marks(s: State, k: string) {
-  return s.events.some((e) => e.d === k) || datesOn(s, k).length > 0 || s.watch.some((w) => w.plan === k && w.st !== "done") ||
+  return eventsOn(s, k).length > 0 || datesOn(s, k).length > 0 || s.watch.some((w) => w.plan === k && w.st !== "done") ||
     s.notes.some((n) => n.rem === k && n.st === "on") || s.learn.some((l) => l.due === k && l.st === "active") ||
     s.proj.some((x) => x.st !== "done" && (x.due === k || x.tasks.some((t) => !t.x && t.due === k) || x.ms.some((m) => !m.x && m.due === k))) ||
     allTasks(s).some((t) => !t.x && t.due === k);
@@ -229,7 +274,7 @@ export function liveStat(s: State, k: string): string {
   const t = todayKey(), m = monthKey(), openN = (l: { x: 0 | 1 }[]) => l.filter((x) => !x.x).length;
   const r: Record<string, string> = {
     habits: s.habits.filter((h) => h.done[t]).length + "/" + s.habits.length + " today", personal: openN(s.personal) + " open", office: openN(s.office) + " open",
-    calendar: s.events.filter((e) => e.d === t).length + " today", dates: s.dates.filter((x) => daysTo(x) <= 30).length + " in 30 days", alarms: s.alarms.filter((a) => a.on).length + " on",
+    calendar: eventsOn(s, t).filter((e) => !ended(e)).length + " today", dates: s.dates.filter((x) => daysTo(x) <= 30).length + " in 30 days", alarms: s.alarms.filter((a) => a.on).length + " on",
     watch: s.watch.filter((w) => w.st === "todo").length + " to watch", notes: s.notes.filter((n) => n.st === "on").length + " notes", learn: s.learn.filter((l) => l.st === "active").length + " active",
     proj: s.proj.filter((x) => x.st === "active").length + " in progress", spend: money(s, spentOn(s)(t)) + " today", goals: s.goals.length + " goals",
     health: (s.health.water[t] || 0) + "/" + s.waterTarget + " glasses", journal: s.journal.some((e) => e.d === t) ? "Logged today" : "Not logged",
@@ -243,7 +288,7 @@ export function liveStat(s: State, k: string): string {
 
 /** Items for the "Things to look at" list on Insights. */
 export function attention(s: State): string[] {
-  const t = todayKey(), notes: string[] = [], ov = allTasks(s).filter((x) => !x.x && x.due && x.due < t).length;
+  const t = todayKey(), notes: string[] = [], ov = allTasks(s).filter((x) => isLate(x)).length;
   if (ov) notes.push(ov + " overdue task" + (ov > 1 ? "s" : "") + " need attention.");
   s.dates.filter((x) => daysTo(x) <= 7).sort((a, b) => daysTo(a) - daysTo(b)).forEach((x) => notes.push(`${x.n}: ${inTxt(daysTo(x)).toLowerCase()}.`));
   budgetRows(s).filter((r) => r.limit && r.spent > r.limit).forEach((r) => notes.push(`${r.c} is over its budget by ${money(s, r.spent - r.limit)}.`));

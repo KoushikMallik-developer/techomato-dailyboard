@@ -58,7 +58,7 @@ function Detail({ id }: { id: number }) {
   const { state, update } = useStore();
   const { set, openSheet } = useUi();
   const openNote = useOpenNote();
-  const [up, setUp] = useState(""), [tk, setTk] = useState("");
+  const [up, setUp] = useState(""), [tk, setTk] = useState(""), [delUp, setDelUp] = useState(-1); // delUp: the log entry waiting for a second tap to delete
   const p = byId(state.proj, id);
   if (!p) return null;
   const mut = (fn: (x: Project) => void) => update((s) => { const x = byId(s.proj, id); if (x) fn(x); });
@@ -131,7 +131,7 @@ function Detail({ id }: { id: number }) {
         <Hd title="Progress log" small={String(p.ups.length)} />
         <QuickAdd value={up} onChange={setUp} placeholder="What did you do today?" onAdd={() => { const v = up.trim(); if (!v) return; mut((x) => { x.ups.push({ d: todayKey(), t: v }); }); setUp(""); }} />
         {p.ups.map((u, i) => [u, i] as const).sort((a, b) => (a[0].d < b[0].d ? 1 : -1)).map(([u, i]) => (
-          <Row key={i} title={u.t} sub={dl(u.d)} right={<LinkBtn label="×" onPress={() => mut((x) => { x.ups.splice(i, 1); })} />} />
+          <Row key={i} title={u.t} sub={dl(u.d)} right={<LinkBtn label={delUp === i ? "Delete?" : "×"} onPress={() => { if (delUp !== i) { setDelUp(i); setTimeout(() => setDelUp(-1), 4000); return; } mut((x) => { x.ups.splice(i, 1); }); setDelUp(-1); }} />} />
         ))}
       </Card>
     </>

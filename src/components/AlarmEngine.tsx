@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Modal, Platform, Vibration, View } from "react-native";
 import { ago, dateKey } from "../lib/date";
-import { taskOf } from "../lib/logic";
-import { ensurePermission, setupNotifications, syncNotifications } from "../lib/notify";
+import { eventsOn, taskOf } from "../lib/logic";
+import { ensurePermission, setupNotifications, silence, syncNotifications } from "../lib/notify";
 import { plan } from "../lib/plan";
 import { useStore } from "../store/store";
 import { useTheme } from "../theme/ThemeProvider";
@@ -31,8 +31,8 @@ export function AlarmEngine() {
         const diff = +now - +new Date(nk + "T" + a.t + ":00");
         if (diff >= 0 && diff < 120000) once("a" + a.id + nk + a.t, { kind: "alarm", title: a.label || "Alarm", time: a.t, snooze: a.snooze }, a.days.length ? undefined : a.id);
       });
-      if (s.alerts.on) s.events.forEach((e) => {
-        if (!e.time || (e.d !== nk && e.d !== tmr)) return;
+      if (s.alerts.on) eventsOn(s, nk).concat(eventsOn(s, tmr)).forEach((e) => {
+        if (!e.time) return;
         const tk = e.tid ? taskOf(s, e) : null; if (tk && tk.x) return;
         const start = new Date(e.d + "T" + e.time + ":00"), lead = s.alerts.lead * 60000, base = "e" + e.id + e.d + e.time;
         if (+now >= +start - lead && now < start) once(base + "p", { kind: "event", title: e.t, time: e.time, pre: Math.max(1, Math.ceil((+start - +now) / 60000)), snooze: 5 });
@@ -76,8 +76,8 @@ export function AlarmEngine() {
           <T weight="700" className="text-display tracking-tighter">{r.time}</T>
           <T size="xl" weight="600" className="text-center">{r.title}</T>
           <T size="sm" tone="muted">{sub}{ui.ring.length > 1 ? ` · +${ui.ring.length - 1} more` : ""}</T>
-          <Btn label="Dismiss" className="self-stretch"onPress={() => set((u) => ({ ring: u.ring.slice(1) }))} />
-          <Btn ghost label={`Snooze ${r.snooze || 5} min`} className="self-stretch"onPress={() => { update((s) => { s.snz.push({ at: Date.now() + (r.snooze || 5) * 60000, item: { ...r, snoozed: 1 } }); }); set((u) => ({ ring: u.ring.slice(1) })); }} />
+          <Btn label="Dismiss" className="self-stretch"onPress={() => { silence(); set((u) => ({ ring: u.ring.slice(1) })); }} />
+          <Btn ghost label={`Snooze ${r.snooze || 5} min`} className="self-stretch"onPress={() => { silence(); update((s) => { s.snz.push({ at: Date.now() + (r.snooze || 5) * 60000, item: { ...r, snoozed: 1 } }); }); set((u) => ({ ring: u.ring.slice(1) })); }} />
         </View>
       </View>
     </Modal>

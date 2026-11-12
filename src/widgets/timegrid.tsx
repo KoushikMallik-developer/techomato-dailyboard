@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { T } from "../components/ui";
 import { todayKey } from "../lib/date";
 import { layout } from "../lib/logic";
+import { useNow } from "../lib/useNow";
 import { CalEvent } from "../store/types";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -14,8 +14,7 @@ export function TimeGrid({ days, byDay, onSlot, onEvent, onDay, selected, faded 
   days: string[]; byDay: Record<string, CalEvent[]>; onSlot: (day: string, time: string) => void; onEvent: (id: number) => void; onDay?: (day: string) => void; selected?: string; faded?: (e: CalEvent) => boolean;
 }) {
   const { c } = useTheme();
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => { const id = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(id); }, []);
+  const now = useNow();
   const today = todayKey(), week = days.length > 1, HR = week ? 46 : 56;
   const blocks = days.map((d) => layout(byDay[d] ?? []));
   const all = blocks.flat(), from = Math.min(7, ...all.map((b) => Math.floor(b.start / 60))), to = Math.min(23, Math.max(20, ...all.map((b) => Math.floor((b.end - 1) / 60))));

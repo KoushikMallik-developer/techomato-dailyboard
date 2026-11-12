@@ -4,12 +4,11 @@ import { Columns, Donut, Trend } from "../../components/charts";
 import { TopBar } from "../../components/TopBar";
 import { Bar, BigNum, Card, Divider, Empty, Row, Screen, Seg, T } from "../../components/ui";
 import { fromKey } from "../../lib/date";
-import { allTasks, attention, lastDays, monthSum, money, num, spentOn, streaks, water } from "../../lib/logic";
+import { allTasks, attention, lastDays, monthSum, money, num, spentOn, streaks, sum, water } from "../../lib/logic";
 import { review } from "../../lib/review";
 import { useStore } from "../../store/store";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"], DAY_NAME = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
 export default function Insights() {
   const { state: s } = useStore();

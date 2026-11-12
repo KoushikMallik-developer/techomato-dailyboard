@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { AppState, Pressable, TextInput, View } from "react-native";
 import { DateTimeInput } from "../components/DateTimeInput";
 import { Btn, Card, Chip, Chips, Check, Empty, Input, LinkBtn, Note as NoteText, QuickAdd, T } from "../components/ui";
 import { todayKey } from "../lib/date";
@@ -65,6 +65,7 @@ function Editor({ id }: { id: number }) {
   };
   useEffect(() => { flushRef.current = flush; });
   useEffect(() => () => flushRef.current(), []); // leaving the editor saves what is waiting
+  useEffect(() => { const sub = AppState.addEventListener("change", (a) => { if (a !== "active") flushRef.current(); }); return () => sub.remove(); }, []); // so does leaving the app
   if (!n) return null;
   const mut = (fn: (x: Note) => void) => { flush(); update((s) => { const x = byId(s.notes, id); if (x) { fn(x); x.m = Date.now(); } }); };
   const later = (fn: (x: Note) => void) => { queue.current.push(fn); if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(flush, 500); };

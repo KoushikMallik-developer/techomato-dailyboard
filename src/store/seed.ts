@@ -106,7 +106,7 @@ function sample(): State {
     time: p.time.map((r) => ({ id: id(), d: key(ago(r[0])), h: r[1], t: r[2] })), links: p.links.map((r) => ({ id: id(), t: r[0], u: r[1] })),
   }));
 
-  ([["06:30", "Wake up", [0, 1, 2, 3, 4], 5, 1], ["21:00", "Take medicine", [], 10, 1], ["08:30", "Weekend lie-in", [5, 6], 10, 0]] as [string, string, number[], number, 0 | 1][])
+  ([["06:30", "Wake up", [0, 1, 2, 3, 4], 5, 0], ["21:00", "Take medicine", [], 10, 0], ["08:30", "Weekend lie-in", [5, 6], 10, 0]] as [string, string, number[], number, 0 | 1][])
     .forEach((r) => S.alarms.push({ id: id(), t: r[0], label: r[1], days: r[2], snooze: r[3], on: r[4] }));
 
   ([["Aanya's birthday", "Birthday", 0, 1999, 7], ["Rahul's birthday", "Birthday", 1, 1996, 1], ["Mom's birthday", "Birthday", 4, 1968, 7], ["Wedding anniversary", "Anniversary", 21, 2019, 14], ["Dad's birthday", "Birthday", 90, 1965, 7], ["First day at work", "Other", 150, 2022, 3]] as [string, string, number, number, number][])

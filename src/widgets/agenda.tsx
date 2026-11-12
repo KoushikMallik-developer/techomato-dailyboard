@@ -4,7 +4,8 @@ import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from "
 import Svg, { Circle, G } from "react-native-svg";
 import { Card, LinkBtn, Row, T, Tag } from "../components/ui";
 import { todayKey } from "../lib/date";
-import { allTasks, billState, dateLabel, daysTo, dueTxt, evSort, inTxt, money, nextOcc, ntitle, score, sortOpen, water } from "../lib/logic";
+import { useNow } from "../lib/useNow";
+import { allTasks, billState, dateLabel, daysTo, dueTxt, ended, eventsOn, evSort, inTxt, money, nextOcc, ntitle, score, sortOpen, water } from "../lib/logic";
 import { useStore } from "../store/store";
 import { DUR, useMotion } from "../theme/motion";
 import { useTheme } from "../theme/ThemeProvider";
@@ -56,12 +57,13 @@ export function Hero() {
 
 /** Everything that needs attention today, pulled from every widget. */
 export function Agenda() {
+  const now = useNow();
   const { state } = useStore();
   const toggle = useTaskToggle(), toggleHabit = useToggle(), { slots, toggle: takeDose } = useDoses();
   const openNote = useOpenNote(), openProject = useOpenProject();
   const [all, setAll] = useState(false);
   const t = todayKey();
-  const ev = state.events.filter((e) => e.d === t && !e.tid).sort(evSort);
+  const ev = eventsOn(state, t).filter((e) => !e.tid && !ended(e, now)).sort(evSort);
   const tk = (["personal", "office"] as const).flatMap((k) => state[k].map((x) => ({ k, x }))).filter((r) => !r.x.x && r.x.due && r.x.due <= t).sort((a, b) => sortOpen(a.x, b.x));
   const bl = state.bills.filter((b) => billState(b).s <= 1);
   const rows: { key: string; node: ReactNode }[] = [];

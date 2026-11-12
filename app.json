@@ -44,12 +44,13 @@
         }
       ],
       "@react-native-community/datetimepicker",
+      ["expo-notifications", { "sounds": ["./assets/sounds/alarm.wav", "./assets/sounds/reminder.wav"] }],
       [
         "expo-build-properties",
         {
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": false
           }
         }
       ],

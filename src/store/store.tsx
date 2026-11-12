@@ -50,14 +50,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const sub = AppState.addEventListener("change", (st) => {
       if (st === "active") update(() => {}); // new day while away: redraw and roll repeats forward
-      else if (cur.current && !readFailed.current) AsyncStorage.setItem(KEY, JSON.stringify(cur.current)).catch(() => {}); // do not wait for the 300 ms delay
+      else setTimeout(() => { if (cur.current && !readFailed.current) AsyncStorage.setItem(KEY, JSON.stringify(cur.current)).catch(() => {}); }, 0); // do not wait for the 300 ms delay; one tick later, so a note flushed by this same event is included
     });
     let day = todayKey();
     const id = setInterval(() => { if (todayKey() !== day) { day = todayKey(); update(() => {}); } }, 30000); // midnight while the app is open
     return () => { sub.remove(); clearInterval(id); };
   }, [update]);
-  const reset = useCallback(() => put(seed()), [put]);
-  const replace = useCallback((s: State) => put(load(JSON.stringify(s))), [put]);
+  const keepCopy = () => { if (cur.current && !readFailed.current) AsyncStorage.setItem(KEY + ":before", JSON.stringify(cur.current)).catch(() => {}); }; // restore and erase leave a way back
+  const reset = useCallback(() => { keepCopy(); put(seed()); }, [put]);
+  const replace = useCallback((s: State) => { const n = load(JSON.stringify(s)); keepCopy(); put(n); }, [put]);
 
   if (!state) return null; // the splash screen stays up until storage has been read
   return <StoreCtx.Provider value={{ state, update, reset, replace }}>{children}</StoreCtx.Provider>;

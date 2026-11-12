@@ -13,6 +13,7 @@ npm start          # then press a for Android, i for iOS (macOS), w for web, or 
 
 ```bash
 npm run typecheck  # tsc --noEmit
+npm test           # plan, repeat and calendar checks (plain asserts, run with tsx)
 npm run doctor     # expo-doctor
 ```
 
@@ -35,6 +36,6 @@ docs/design.md     Architecture, data model and the widget porting plan
 
 All 17 widgets, Home (life score, Today's agenda), Insights, global search, Settings (profile, currency, palettes, theme, widget order, backup and restore) and the cross-widget links from the HTML preview are ported. Alarms and event alerts ring in the app and are scheduled as local notifications on Android and iOS.
 
-Known differences from the preview: dates and times are typed as YYYY-MM-DD and HH:MM (with Today / Tomorrow shortcuts), and alarm notifications use the system default sound.
+Known differences from the preview: dates and times use the system picker on phones (typed as YYYY-MM-DD and HH:MM on web, with Today / Tomorrow shortcuts). Alarms and event alerts use two custom tones (assets/sounds): an alarm ring for alarms and medicine doses, a short chime for everything else.
 
-Not yet tested on a device or simulator (only the web build was clicked through). `tsc`, `expo lint`, `expo-doctor` and `expo export` for Android, iOS and web pass. There are no automated tests yet.
+Not yet tested on a device or simulator (only the web build was clicked through). `tsc`, `expo lint`, `expo-doctor` and `expo export` for Android, iOS and web pass. `npm test` runs the assert-based checks in scripts/.

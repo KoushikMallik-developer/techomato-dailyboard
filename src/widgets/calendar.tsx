@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
-import { Btn, Card, Chip, Chips, Empty, Note, Row, Stats, T, Tag, Toggle } from "../components/ui";
+import { Btn, Card, Chips, Empty, Note, Row, Seg, Stats, T, Tag, Toggle } from "../components/ui";
 import { dateKey, fromKey, todayKey } from "../lib/date";
-import { billDue, datesOn, dateLabel, dl, dayTxt, evSort, hm, marks, money, nextAlarm, ntitle, taskOf, untilTxt, allTasks } from "../lib/logic";
+import { useNow } from "../lib/useNow";
+import { billDue, datesOn, dateLabel, dl, dayTxt, eventsBetween, ended, eventsOn, evSort, hm, marks, money, nextAlarm, ntitle, taskOf, untilTxt, allTasks } from "../lib/logic";
 import { ensurePermission, notificationsSupported } from "../lib/notify";
 import { useStore } from "../store/store";
 import { CalEvent, RingItem } from "../store/types";
@@ -12,6 +13,7 @@ import { useTheme } from "../theme/ThemeProvider";
 import { MoreLink, PrioTag } from "./shared";
 import { useOpenNote } from "./notes";
 import { useOpenProject } from "./projects";
+import { TimeGrid } from "./timegrid";
 
 export function EvRow({ e, showDate }: { e: CalEvent; showDate?: boolean }) {
   const { state } = useStore();
@@ -22,34 +24,45 @@ export function EvRow({ e, showDate }: { e: CalEvent; showDate?: boolean }) {
 
 export function CalendarCard() {
   const { state } = useStore();
-  const t = todayKey();
-  const L = state.events.filter((e) => e.d >= t).sort(evSort).slice(0, 3);
+  const now = useNow(), t = todayKey();
+  const L = eventsBetween(state, t, 90).slice(0, 3);
   return (
-    <Card title="Calendar" small={`${state.events.filter((e) => e.d === t).length} today`}>
-      {L.length ? L.map((e) => <EvRow key={e.id} e={e} showDate />) : <Empty text="Nothing coming up." />}
+    <Card title="Calendar" small={`${eventsOn(state, t).filter((e) => !ended(e, now)).length} today`}>
+      {L.length ? L.map((e) => <EvRow key={e.id + e.d} e={e} showDate />) : <Empty text="Nothing coming up." />}
     </Card>
   );
 }
+
+const VIEWS: ["day" | "week" | "month" | "agenda", string][] = [["day", "Day"], ["week", "Week"], ["month", "Month"], ["agenda", "Agenda"]];
+const DAY_MS = 864e5;
 
 export function CalendarPage() {
   const { c } = useTheme();
   const { state } = useStore();
   const { ui, set, openSheet } = useUi();
   const openNote = useOpenNote(), openProject = useOpenProject();
-  const { y, m } = ui.cal, first = new Date(y, m, 1, 12), n = new Date(y, m + 1, 0).getDate(), today = todayKey();
+  const { y, m } = ui.cal, first = new Date(y, m, 1, 12), n = new Date(y, m + 1, 0).getDate(), today = todayKey(), view = ui.cview, day = ui.day;
   const lead = (first.getDay() + 6) % 7;
   const cells: (number | null)[] = Array(lead).fill(null);
   for (let i = 1; i <= n; i++) cells.push(i);
   while (cells.length % 7) cells.push(null);
-  const day = ui.day;
-  const ev = state.events.filter((e) => e.d === day).sort(evSort);
+  const go = (k: string) => { const d = fromKey(k); set({ day: k, cal: { y: d.getFullYear(), m: d.getMonth() } }); };
+  const nav = (d: number) => set((u) => { let mm = u.cal.m + d, yy = u.cal.y; if (mm < 0) { mm = 11; yy--; } if (mm > 11) { mm = 0; yy++; } return { cal: { y: yy, m: mm } }; });
+  const step = (d: number) => (view === "month" ? nav(d) : go(dateKey(new Date(+fromKey(day) + d * (view === "week" ? 7 : 1) * DAY_MS))));
+  const mon = new Date(+fromKey(day) - ((fromKey(day).getDay() + 6) % 7) * DAY_MS), week = Array.from({ length: 7 }, (_, i) => dateKey(new Date(+mon + i * DAY_MS)));
+  const grid = view === "day" ? [day] : week, byDay: Record<string, CalEvent[]> = {};
+  if (view === "day" || view === "week") grid.forEach((k) => { byDay[k] = eventsOn(state, k); });
+  const title = view === "month" ? first.toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : view === "week" ? `${fromKey(week[0]).toLocaleDateString(undefined, { day: "numeric", month: "short" })} to ${fromKey(week[6]).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}`
+    : fromKey(day).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const timeline = view === "day" || view === "week";
+  const ev = eventsOn(state, day).filter((e) => !timeline || !e.time).sort(evSort); // on the hour grid, timed events sit in the grid; the list keeps what has no time
   const td = allTasks(state).filter((t) => !t.x && t.due === day && !state.events.some((e) => e.tid === t.id));
   const bl = state.bills.filter((b) => billDue(b) === day && b.paid !== today.slice(0, 7));
-  const up = state.events.filter((e) => e.d > day && e.d <= dateKey(new Date(+fromKey(day) + 14 * 864e5))).sort(evSort);
-  const nav = (d: number) => set((u) => { let mm = u.cal.m + d, yy = u.cal.y; if (mm < 0) { mm = 11; yy--; } if (mm > 11) { mm = 0; yy++; } return { cal: { y: yy, m: mm } }; });
+  const up = eventsBetween(state, dateKey(new Date(+fromKey(day) + DAY_MS)), 14);
   const items: { key: string; node: React.ReactNode }[] = [];
   const add = (key: string, node: React.ReactNode) => items.push({ key, node });
-  ev.forEach((e) => add("e" + e.id, <EvRow e={e} />));
+  ev.forEach((e) => add("e" + e.id + e.d, <EvRow e={e} />));
   state.learn.filter((l) => l.due === day && l.st === "active").forEach((l) => add("l" + l.id, <Row title={"Finish: " + l.t} right={<Tag label="Learning" tone="b" />} onPress={() => openSheet("learn", "", l.id)} />));
   state.proj.filter((x) => x.st !== "done").forEach((x) => {
     const row = (k: string, l: string, t: string) => add("p" + x.id + k, <Row title={`${l}: ${t}`} sub={x.t} right={<Tag label="Project" tone="b" />} onPress={() => openProject(x.id)} />);
@@ -65,34 +78,49 @@ export function CalendarPage() {
   return (
     <>
       <Card>
-        <View className="flex-row justify-between items-center mb-3">
-          <Pressable onPress={() => nav(-1)} accessibilityRole="button" accessibilityLabel="Previous month" className="w-hit h-hit items-center justify-center"><Ionicons name="chevron-back" size={22} color={c.ink} /></Pressable>
-          <T weight="700">{first.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</T>
-          <Pressable onPress={() => nav(1)} accessibilityRole="button" accessibilityLabel="Next month" className="w-hit h-hit items-center justify-center"><Ionicons name="chevron-forward" size={22} color={c.ink} /></Pressable>
+        <View className="flex-row items-center justify-between">
+          <Pressable onPress={() => step(-1)} accessibilityRole="button" accessibilityLabel="Previous" className="w-hit h-hit items-center justify-center"><Ionicons name="chevron-back" size={22} color={c.ink} /></Pressable>
+          <T weight="700" className="flex-1 text-center" numberOfLines={2}>{title}</T>
+          <Pressable onPress={() => step(1)} accessibilityRole="button" accessibilityLabel="Next" className="w-hit h-hit items-center justify-center"><Ionicons name="chevron-forward" size={22} color={c.ink} /></Pressable>
         </View>
-        <View className="flex-row">{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <T key={i} size="xs" weight="600" tone="muted" className="flex-1 pb-0.5 text-center uppercase">{d}</T>)}</View>
-        {Array.from({ length: cells.length / 7 }, (_, r) => (
-          <View key={r} className="flex-row">
-            {cells.slice(r * 7, r * 7 + 7).map((d, i) => {
-              if (!d) return <View key={i} className="flex-1 h-hit" />;
-              const k = dateKey(new Date(y, m, d, 12)), sel = k === day, has = marks(state, k);
-              return (
-                <Pressable key={i} onPress={() => set({ day: k })} accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityLabel={dl(k) + (has ? ", has items" : "")} className="flex-1 h-hit items-center justify-center">
-                  <View className={`h-10 w-10 max-w-full items-center justify-center rounded-sm ${sel ? "bg-brand" : k === today ? "border-[1.5px] border-brand" : ""}`}>
-                    <T size="md" weight={k === today ? "700" : "400"} tone={sel ? "onBrand" : k === today ? "brand" : "ink"}>{d}</T>
-                    {has ? <View className={`absolute bottom-[5px] h-1 w-1 rounded-full ${sel ? "bg-brandInk" : "bg-brand"}`} /> : null}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
+        <View className="mt-2 flex-row items-center gap-2">
+          <View className="flex-1"><Seg value={view} options={VIEWS} onChange={(v) => set({ cview: v })} /></View>
+          <Btn small ghost label="Today" onPress={() => go(today)} />
+        </View>
       </Card>
-      <Card title={dl(day)} small="agenda">
-        {items.length ? items.map((i) => <View key={i.key}>{i.node}</View>) : <Empty text="Nothing planned. Tap Add to schedule something." />}
-      </Card>
-      <Note>{state.alerts.on ? `Events with a time ring ${state.alerts.lead} minutes before and at the start.` : "Event alerts are off. Turn them on in Alarms."}</Note>
-      {up.length ? <Card title="Next 14 days">{up.map((e) => <EvRow key={e.id} e={e} showDate />)}</Card> : null}
+      {timeline ? (
+        <Card>
+          <TimeGrid days={grid} byDay={byDay} selected={day} onDay={go} faded={(e) => !!(e.tid && taskOf(state, e)?.x)} onEvent={(id) => openSheet("event", "", id)} onSlot={(k, time) => { set({ day: k, slot: time }); openSheet("event", "", ""); }} />
+        </Card>
+      ) : null}
+      {view === "month" ? (
+        <Card>
+          <View className="flex-row">{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <T key={i} size="xs" weight="600" tone="muted" className="flex-1 pb-0.5 text-center uppercase">{d}</T>)}</View>
+          {Array.from({ length: cells.length / 7 }, (_, r) => (
+            <View key={r} className="flex-row">
+              {cells.slice(r * 7, r * 7 + 7).map((d, i) => {
+                if (!d) return <View key={i} className="flex-1 h-hit" />;
+                const k = dateKey(new Date(y, m, d, 12)), sel = k === day, has = marks(state, k);
+                return (
+                  <Pressable key={i} onPress={() => set({ day: k })} accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityLabel={dl(k) + (has ? ", has items" : "")} className="flex-1 h-hit items-center justify-center">
+                    <View className={`h-10 w-10 max-w-full items-center justify-center rounded-sm ${sel ? "bg-brand" : k === today ? "border-[1.5px] border-brand" : ""}`}>
+                      <T size="md" weight={k === today ? "700" : "400"} tone={sel ? "onBrand" : k === today ? "brand" : "ink"}>{d}</T>
+                      {has ? <View className={`absolute bottom-[5px] h-1 w-1 rounded-full ${sel ? "bg-brandInk" : "bg-brand"}`} /> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </Card>
+      ) : null}
+      {timeline && !items.length ? null : (
+        <Card title={timeline ? "All day and other" : dl(day)} small={timeline ? dl(day) : "agenda"}>
+          {items.length ? items.map((i) => <View key={i.key}>{i.node}</View>) : <Empty text="Nothing planned. Tap Add to schedule something." />}
+        </Card>
+      )}
+      <Note>{state.alerts.on ? "Events with a time ring 15 minutes before and at the start. Tap an empty hour to add an event." : "Event alerts are off. Turn them on in Alarms."}</Note>
+      {!timeline && up.length ? <Card title="Next 14 days">{up.map((e) => <EvRow key={e.id + e.d} e={e} showDate />)}</Card> : null}
     </>
   );
 }
@@ -146,8 +174,7 @@ export function AlarmsPage() {
           <View className="flex-1"><T>Ring for every calendar event</T><T size="sm" tone="muted">Before the start and at the start time</T></View>
           <Toggle value={!!state.alerts.on} onChange={(v) => update((s) => { s.alerts.on = v ? 1 : 0; })} label="Event alerts" />
         </View>
-        <T size="sm" tone="muted" className="mt-3 mb-1.5">Ring before the start</T>
-        <Chips>{[5, 10, 15, 30, 60].map((v) => <Chip key={v} label={v + " min"} on={v === state.alerts.lead} onPress={() => update((s) => { s.alerts.lead = v; })} />)}</Chips>
+        <T size="sm" tone="muted" className="mt-3">Rings 15 minutes before the start and again at the start time.</T>
         <View className="mt-3">
           {state.alerts.on ? (up.length ? <><T weight="600">Next alerts</T>{up.map((x) => <Row key={x.e.id} title={x.e.t} sub={dl(x.e.d)} right={<Tag label={`${hm(new Date(+x.s - lead))} and ${x.e.time}`} />} />)}</> : <Empty text="No upcoming events with a time." />) : <Empty text="Alerts are off." />}
         </View>

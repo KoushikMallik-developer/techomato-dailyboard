@@ -1,12 +1,11 @@
 // Weekly and monthly review: this period against the one before it, plus a few things worth acting on.
 import { State } from "../store/types";
-import { ago, dateKey, todayKey } from "./date";
-import { allTasks, lmin, money, monthSum, num, spentOn, water } from "./logic";
+import { ago, dateKey } from "./date";
+import { allTasks, isLate, lmin, money, monthSum, num, spentOn, sum, water } from "./logic";
 
 export type Metric = { label: string; value: string; delta: string; good: boolean | null }; // good: null = no change or no basis to compare
 
 const keys = (from: number, n: number) => Array.from({ length: n }, (_, i) => dateKey(ago(from + i)));
-const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 const avg = (a: number[]) => (a.length ? sum(a) / a.length : 0);
 
 export function review(s: State, n: number) {
@@ -33,12 +32,12 @@ export function review(s: State, n: number) {
   if (sleep(cur)) metrics.push(m("Average sleep", sleep(cur), sleep(prev), (x) => num(x) + " h", "", true, sleep(prev) > 0));
   if (mood(curSet)) metrics.push(m("Average mood", mood(curSet), mood(prevSet), (x) => num(x) + "/5", "", true, mood(prevSet) > 0));
 
-  const focus: string[] = [], today = todayKey();
+  const focus: string[] = [];
   const weakest = s.habits.map((h) => ({ h, d: cur.filter((k) => h.done[k]).length })).sort((a, b) => a.d - b.d)[0];
   if (weakest && weakest.d / n < 0.5) focus.push(`${weakest.h.n}: done ${weakest.d} of ${n} days. Try a fixed time or a reminder.`);
   if (spPrev > 0 && spCur > spPrev * 1.2) focus.push(`Spending is up ${Math.round(((spCur - spPrev) / spPrev) * 100)}% on the previous period.`);
   if (s.budget > 0 && monthSum(s, "x") > s.budget) focus.push(`This month's spending is over your ${money(s, s.budget)} budget.`);
-  const late = allTasks(s).filter((t) => !t.x && t.due && t.due < today).length;
+  const late = allTasks(s).filter((t) => isLate(t)).length;
   if (late) focus.push(`${late} overdue task${late > 1 ? "s" : ""}. Finish them or move the dates.`);
   if (sleep(cur) && sleep(cur) < 7) focus.push(`Sleep averaged ${num(sleep(cur))} h. Aim for 7 or more.`);
   if (hit(cur) < n / 2) focus.push(`Water goal met on ${hit(cur)} of ${n} days.`);

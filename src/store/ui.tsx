@@ -6,7 +6,7 @@ import { RingItem } from "./types";
 /** Screen state that is not saved: which sheet is open, selected day, open note or project, ringing alarms. */
 export type SheetReq = { type: string; ctx: string; id: string } | null;
 export type Ui = {
-  sheet: SheetReq; day: string; cal: { y: number; m: number };
+  sheet: SheetReq; day: string; cal: { y: number; m: number }; cview: "day" | "week" | "month" | "agenda"; slot: string;
   nview: "folders" | "list" | "edit"; nfolder: string; nid: number;
   pview: "list" | "detail"; pid: number; ring: RingItem[];
 };
@@ -15,7 +15,7 @@ const C = createContext<Ctx | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
   const [ui, setUi] = useState<Ui>(() => ({
-    sheet: null, day: todayKey(), cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
+    sheet: null, day: todayKey(), cal: { y: new Date().getFullYear(), m: new Date().getMonth() }, cview: "day", slot: "",
     nview: "folders", nfolder: "All", nid: 0, pview: "list", pid: 0, ring: [],
   }));
   useEffect(() => { // after midnight or a long background, jump back to today
@@ -28,7 +28,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   }, []);
   const set = useCallback((p: Partial<Ui> | ((u: Ui) => Partial<Ui>)) => setUi((u) => ({ ...u, ...(typeof p === "function" ? p(u) : p) })), []);
   const openSheet = useCallback((type: string, ctx = "", id: string | number = "") => set({ sheet: { type, ctx, id: String(id) } }), [set]);
-  const closeSheet = useCallback(() => set({ sheet: null }), [set]);
+  const closeSheet = useCallback(() => set({ sheet: null, slot: "" }), [set]);
   const v = useMemo(() => ({ ui, set, openSheet, closeSheet }), [ui, set, openSheet, closeSheet]);
   return <C.Provider value={v}>{children}</C.Provider>;
 }

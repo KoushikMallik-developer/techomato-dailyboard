@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Btn, Card, Day, Empty, Input, QuickAdd, Seg, Stats } from "../components/ui";
 import { ago, dateKey, todayKey } from "../lib/date";
-import { agoTxt, dl, dueTxt, setTaskDone, sortOpen } from "../lib/logic";
+import { useNow } from "../lib/useNow";
+import { agoTxt, dl, dueTxt, isLate, setTaskDone, sortOpen } from "../lib/logic";
 import { useStore } from "../store/store";
 import { Task, TaskListKey } from "../store/types";
 import { useUi } from "../store/ui";
@@ -14,6 +15,7 @@ export function useTaskToggle() {
 const open = (l: Task[]) => l.filter((t) => !t.x).sort(sortOpen);
 
 export function TasksCard({ list, title }: { list: TaskListKey; title: string }) {
+  useNow();
   const { state } = useStore();
   const toggle = useTaskToggle();
   const o = open(state[list]);
@@ -26,6 +28,7 @@ export function TasksCard({ list, title }: { list: TaskListKey; title: string })
 }
 
 export function TasksPage({ list }: { list: TaskListKey }) {
+  useNow();
   const { state, update } = useStore();
   const { openSheet } = useUi();
   const toggle = useTaskToggle();
@@ -38,7 +41,7 @@ export function TasksPage({ list }: { list: TaskListKey }) {
   const clear = () => { if (!sure) { setSure(true); return; } update((s) => { s[list] = s[list].filter((t) => !t.x); }); setSure(false); }; // linked events of removed tasks are dropped by the store
   return (
     <>
-      <Stats items={[[open(all).length, "Open"], [all.filter((t) => !t.x && t.due && t.due < today).length, "Overdue"], [all.filter((t) => t.x && (t.f ?? "") >= wk).length, "Done, 7 days"]]} />
+      <Stats items={[[open(all).length, "Open"], [all.filter((t) => isLate(t)).length, "Overdue"], [all.filter((t) => t.x && (t.f ?? "") >= wk).length, "Done, 7 days"]]} />
       <QuickAdd value={text} onChange={setText} onAdd={add} placeholder={`Quick add a ${list} task`} />
       <Seg value={tab} onChange={(v) => { setTab(v); setSure(false); }} options={[["open", "Open"], ["done", "Completed history"]]} />
       <Input value={q} onChangeText={setQ} placeholder="Search tasks" accessibilityLabel="Search tasks" />

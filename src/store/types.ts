@@ -3,15 +3,15 @@ export type WidgetKey =
   | "proj" | "health" | "journal" | "notes" | "watch" | "bills" | "shop" | "subs" | "docs" | "trips" | "meds";
 
 export type ThemeMode = "system" | "light" | "dark";
-/** How often a task or event repeats: "" none, d daily, w weekly, m monthly, y yearly. */
-export type Rep = "" | "d" | "w" | "m" | "y";
+/** How often a task or event repeats: "" none, d daily, w weekly, m monthly, y yearly, or "D" plus weekday digits (0 = Sunday ... 6 = Saturday), e.g. "D135" for Monday, Wednesday and Friday. */
+export type Rep = "" | "d" | "w" | "m" | "y" | `D${string}`;
 export type Prio = "h" | "m" | "l";
 export type TaskListKey = "personal" | "office";
 
 export type Habit = { id: number; n: string; rt: string; done: Record<string, 1> };
 /** cal "1" = shown on the calendar (a linked event with event.tid = task.id exists). */
 export type Task = { id: number; t: string; p: Prio; due: string; c: string; x: 0 | 1; f: string | null; cal: "" | "1"; time: string; rep?: Rep; nx?: number };
-export type CalEvent = { id: number; t: string; d: string; time: string; cat: string; tid?: number; tk?: TaskListKey; rep?: Rep };
+export type CalEvent = { id: number; t: string; d: string; time: string; cat: string; tid?: number; tk?: TaskListKey; rep?: Rep; /** minutes; 60 when missing */ dur?: number };
 export type Spend = { id: number; k: "x" | "i"; a: number; l: string; c: string; d: string; bid?: number };
 export type Goal = { id: number; t: string; target: number; cur: number; unit: string; due: string; log: { d: string; v: number }[] };
 export type Journal = { id: number; d: string; mood: number; txt: string };
@@ -27,7 +27,7 @@ export type Project = {
 };
 export type Alarm = { id: number; t: string; label: string; days: number[]; snooze: number; on: 0 | 1; /** One-time alarms: when it was switched on and for which time, so one that rang while the app was closed can be switched off. */ armed?: { at: number; t: string } };
 export type YDate = { id: number; n: string; kind: string; d: string; hy: "1" | ""; rem: number };
-export type Bill = { id: number; n: string; a: number; day: number; paid: string };
+export type Bill = { id: number; n: string; a: number; day: number; paid: string; /** month the bill was added (YYYY-MM); an earlier month left unpaid is overdue */ from?: string };
 /** A recurring service. next = next renewal date; act 0 = cancelled. */
 export type Sub = { id: number; n: string; a: number; cycle: "w" | "m" | "y"; next: string; act: 0 | 1 };
 /** seen: the day it was added, so a reminder for a document added inside its lead window goes out once, the next morning. */

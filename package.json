@@ -43,8 +43,9 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
-    "lint": "expo lint",
-    "test": "tsx scripts/check-plan.ts && tsx scripts/check-repeat.ts"
+    "lint": "expo lint -- --no-cache",
+    "test": "tsx scripts/check-plan.ts && tsx scripts/check-repeat.ts",
+    "eas-build-post-install": "npm run typecheck && npm test"
   },
   "private": true
 }

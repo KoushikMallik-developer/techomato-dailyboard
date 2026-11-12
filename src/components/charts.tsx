@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import Svg, { Circle, G, Line, Polyline, Rect, Text as SText } from "react-native-svg";
-import { Pt } from "../lib/logic";
+import { Pt, sum } from "../lib/logic";
 import { useTheme } from "../theme/ThemeProvider";
 import { T } from "./ui";
 
@@ -45,7 +45,6 @@ export function LineChart({ values, unit }: { values: number[]; unit: string }) 
 }
 
 /** Small charts drawn with Views and react-native-svg, themed through the palette. Each one carries a one-line text summary for screen readers. */
-const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
 export type BarPoint = { l: string; v: number; hi?: boolean };
 

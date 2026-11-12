@@ -30,7 +30,7 @@ export function SpendPage() {
   const [cat, setCat] = useState("All"), [bud, setBud] = useState(state.budget ? String(state.budget) : "");
   const m = monthSum(state, "x"), inc = monthSum(state, "i"), pct = state.budget > 0 ? Math.min(100, (m / state.budget) * 100) : 0, sp = spentOn(state);
   const rows = budgetRows(state); // fixed order, so a row does not jump while its limit is typed
-  const setLimit = (c: string, v: string) => update((s) => { const n = parseFloat(v); if (v.trim() === "") delete s.catBudgets[c]; else if (n >= 0) s.catBudgets[c] = n; });
+  const setLimit = (c: string, v: string) => update((s) => { const n = parseFloat(v); if (v.trim() === "") delete s.catBudgets[c]; else if (Number.isFinite(n) && n >= 0) s.catBudgets[c] = n; });
   const L = state.spend.filter((e) => cat === "All" || e.c === cat || (cat === "Income" && e.k === "i")).sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : b.id - a.id));
   return (
     <>
@@ -39,7 +39,7 @@ export function SpendPage() {
         <Bar pct={pct} />
         <View className="flex-row justify-between items-center mt-3 gap-3">
           <T tone={state.budget > 0 && m > state.budget ? "bad" : "muted"} size="md" className="flex-1">{state.budget <= 0 ? "Set a monthly budget" : m > state.budget ? "Over by " + money(state, m - state.budget) : money(state, state.budget - m) + " left"}</T>
-          <Input value={bud} onChangeText={(v) => { setBud(v); const n = v.trim() === "" ? 0 : parseFloat(v); if (n >= 0) update((s) => { s.budget = n; }); }} keyboardType="numeric" accessibilityLabel="Monthly budget" className="w-[110px]" />
+          <Input value={bud} onChangeText={(v) => { setBud(v); const n = v.trim() === "" ? 0 : parseFloat(v); if (Number.isFinite(n) && n >= 0) update((s) => { s.budget = n; }); }} keyboardType="numeric" accessibilityLabel="Monthly budget" className="w-[110px]" />
         </View>
       </Card>
       <Card title="Last 14 days" small="expenses"><Bars data={lastDays(14, sp)} fmt={(n) => money(state, n)} /></Card>

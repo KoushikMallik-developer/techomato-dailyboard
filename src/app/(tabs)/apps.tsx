@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { IconTile, Screen, T } from "../../components/ui";
 import { TopBar } from "../../components/TopBar";
 import { liveStat } from "../../lib/logic";
+import { useNow } from "../../lib/useNow";
 import { useStore } from "../../store/store";
 import { useLayout } from "../../theme/layout";
 import { Press } from "../../theme/motion";
@@ -10,6 +11,7 @@ import { WIDGETS } from "../../widgets/registry";
 
 export default function Apps() {
   const { state } = useStore();
+  useNow();
   const { tileCols } = useLayout();
   return (
     <Screen wide>

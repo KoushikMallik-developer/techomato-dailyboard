@@ -1,7 +1,7 @@
 // Run: npx tsx scripts/check-plan.ts  (plain asserts: the review, the notification plan, budgets and subscriptions)
 import assert from "node:assert/strict";
 import { dateKey, todayKey } from "../src/lib/date";
-import { budgetRows, rollAlarms } from "../src/lib/logic";
+import { billState, budgetRows, money, rollAlarms } from "../src/lib/logic";
 import { perMonth, perYear, rollSubs } from "../src/lib/subs";
 import { plan } from "../src/lib/plan";
 import { review } from "../src/lib/review";
@@ -120,6 +120,7 @@ assert.deepEqual([back.docs, back.trips, back.meds, back.subs], [[], [], [], []]
 assert.deepEqual(back.shop.map((x) => x.t), ["Keep me"], "the user's data wins over the defaults");
 assert.ok(!back.order.includes("gone" as never) && back.order.includes("docs") && back.on.docs, "old widgets dropped, new ones added and switched on");
 assert.throws(() => load('{"habits":[]}'), "a wrong shape is rejected, not replaced");
+assert.equal(load(JSON.stringify({ ...blank(), alerts: { on: 1, lead: 30 } })).alerts.lead, 15, "event alerts are always 15 minutes ahead, even in older saved data");
 assert.throws(() => load("{not json"), "unreadable text is rejected, not replaced");
 assert.equal(load(null).habits.length, 0, "no saved data gives an empty app");
 // reminders: one-time ones are scheduled well ahead, and alarms and event alerts are marked for the app to ring itself
@@ -156,4 +157,56 @@ rollAlarms(s, new Date(2026, 5, 11, 9, 0, 0));
 assert.equal(s.alarms[0].on, 0, "and is switched off once tomorrow's time has passed");
 s.alarms = [{ ...one, days: [0] }]; rollAlarms(s, d9);
 assert.equal(s.alarms[0].on, 1, "repeating alarms are left alone");
+// a repeating event rings on each of its days, not only the next one
+s = blank(); s.alerts = { on: 1, lead: 10 };
+s.events = [{ id: 7, t: "Class", d: dateKey(now), time: "18:00", cat: "Personal", rep: "d" }];
+s.events[0].rep = "w";
+const cls = plan(s, now).once.filter((o) => o.title === "Class" && o.body === "Starting now");
+assert.ok(cls.length >= 2 && cls.length <= 3, "weekly event: its next two Mondays or so, not a month of alerts"); 
+s.events[0].rep = "D1234560";
+assert.ok(plan(s, now).once.filter((o) => o.title === "Class" && o.body === "Starting now").length >= 14, "other repeats: about two weeks of start alerts");
+s.events[0].rep = "d";
+const everyDay = plan(s, now);
+assert.equal(everyDay.daily.filter((d) => d.title === "Class" && d.ring).length, 2, "every day: one repeating alert before and one at the start");
+assert.equal(everyDay.once.filter((o) => o.title === "Class").length, 0, "and no days listed ahead");
+s.events[0].d = dateKey(new Date(+now + 3 * 864e5));
+assert.ok(plan(s, now).once.filter((o) => o.title === "Class" && o.body === "Starting now").length <= 3, "every day but not started yet: only the start day and the two days after");
+// an every-day event that starts tomorrow, with today's time already gone, rings every day without the app being opened
+s.events[0].d = tomorrow; s.events[0].time = "05:00";
+const tom = plan(s, now);
+assert.equal(tom.daily.filter((d) => d.title === "Class").length, 2, "starting tomorrow: daily alerts, so day 3 and later still ring");
+assert.equal(tom.once.filter((o) => o.title === "Class").length, 0);
+// the same for a daily task shown on the calendar
+s.personal = [{ id: 9, t: "Pills", p: "m", due: tomorrow, c: today, x: 0, f: null, cal: "1", time: "05:00", rep: "d" }];
+s.events = [{ id: 8, t: "Pills", d: tomorrow, time: "05:00", cat: "Personal", tid: 9, tk: "personal" }];
+assert.equal(plan(s, now).daily.filter((d) => d.title === "Pills").length, 2, "a daily task gets repeating alerts too");
+// starting tomorrow with a time still ahead of now: the first alerts are the one-time ones
+s.personal = []; s.events = [{ id: 7, t: "Late", d: tomorrow, time: "18:00", cat: "Personal", rep: "d" }];
+assert.equal(plan(s, now).daily.filter((d) => d.title === "Late").length, 0, "time not yet gone: no daily trigger, or it would fire today");
+// custom tones: alarms and doses use the alarm channel (loud), event alerts the reminder chime
+s = blank(); s.alerts = { on: 1, lead: 15 };
+s.alarms = [{ id: 1, t: "07:00", label: "Wake up", on: 1, days: [], snooze: 5 } as never];
+s.events = [{ id: 2, t: "Meeting", d: tomorrow, time: "10:00", cat: "Personal" }];
+const loud = plan(s, now).once;
+assert.ok(loud.find((o) => o.title === "Wake up")?.loud, "an alarm uses the alarm tone");
+assert.ok(loud.filter((o) => o.title === "Meeting").length >= 2 && loud.filter((o) => o.title === "Meeting").every((o) => !o.loud), "event alerts use the reminder chime");
+// a snooze is scheduled with the system too, so it rings with the app closed
+s.snz = [{ at: +now + 5 * 60000, item: { kind: "alarm", title: "Wake up", time: "07:00", snooze: 5, snoozed: 1 } }];
+assert.ok(plan(s, now).once.some((o) => o.title === "Wake up" && o.body === "Snoozed" && o.loud && o.ring), "a snoozed alarm rings with the app closed");
+s.snz = [{ at: +now - 1000, item: { kind: "alarm", title: "Wake up", time: "07:00", snooze: 5, snoozed: 1 } }];
+assert.ok(!plan(s, now).once.some((o) => o.body === "Snoozed"), "a snooze that has passed is not scheduled");
+// a bill left unpaid last month stays overdue after the month turns; paying clears it
+const pm = new Date(); pm.setDate(1); pm.setMonth(pm.getMonth() - 1);
+const lastMonth = dateKey(pm).slice(0, 7), thisMonth = today.slice(0, 7);
+assert.equal(billState({ id: 1, n: "Rent", a: 1, day: 28, paid: "", from: lastMonth }).t, "Overdue", "last month unpaid");
+assert.equal(billState({ id: 1, n: "Rent", a: 1, day: 28, paid: lastMonth, from: lastMonth }).t === "Overdue", false, "last month paid");
+assert.equal(billState({ id: 1, n: "Rent", a: 1, day: 28, paid: thisMonth, from: lastMonth }).t, "Paid", "paying this month clears it");
+assert.notEqual(billState({ id: 1, n: "Rent", a: 1, day: 31, paid: "" }).t, "Overdue", "a bill with no start month is not flagged for earlier months (day 31 is never past in its own month)");
+// money keeps cents when there are some
+const usd = { ...blank(), cur: "$" };
+assert.equal(money(usd, 4.99), "$4.99"); assert.equal(money(usd, 5), "$5"); assert.equal(money(usd, -0.4), "-$0.4");
+// a backup with a wrong field type falls back to the empty default instead of crashing the screens
+const wrong = JSON.parse(JSON.stringify(blank())) as Record<string, unknown>; wrong.events = null; wrong.snz = {}; wrong.nid = "x";
+const fixed = load(JSON.stringify(wrong));
+assert.ok(Array.isArray(fixed.events) && Array.isArray(fixed.snz) && typeof fixed.nid === "number", "wrong types in a backup are replaced");
 console.log("plan checks passed");

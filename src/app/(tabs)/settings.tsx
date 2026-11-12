@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { AppState, Platform, Pressable, Share, View } from "react-native";
-import { allowExactAlarms, exactAlarmsAllowed, syncNotifications } from "../../lib/notify";
+import { Alert, AppState, Platform, Pressable, Share, View } from "react-native";
+import { allowExactAlarms, exactAlarmsAllowed, syncNotifications, testAlarm } from "../../lib/notify";
 import { Btn, Card, Chip, Chips, Input, LinkBtn, Note, Screen, Seg, T, Toggle } from "../../components/ui";
 import { TopBar } from "../../components/TopBar";
 import { useStore } from "../../store/store";
@@ -71,6 +71,7 @@ export default function Settings() {
           </View>
         ))}
         {Platform.OS === "android" && !exact ? <><Note tone="bad">Alarms may ring late or not at all while the phone sleeps, because exact alarms are not allowed.</Note><Btn label="Allow exact alarms" onPress={() => { allowExactAlarms().then((ok) => { setExact(ok); if (ok) syncNotifications(state).catch(() => {}); }).catch(() => {}); }} /></> : null}
+        <Btn ghost label="Test alarm in 1 minute" onPress={() => { testAlarm(state).then((n) => Alert.alert("Test alarm set", `It will go off in 1 minute. ${n} reminders are waiting in total. Lock the phone now and wait.`)).catch(() => Alert.alert("Could not set a test alarm", "Check that notifications are allowed for this app.")); }} />
         <Note>Alarms, event alerts and yearly dates have their own switches. Reminders go out at 09:00; the phone must allow notifications.</Note>
       </Card>
       <Card title="Your data">
