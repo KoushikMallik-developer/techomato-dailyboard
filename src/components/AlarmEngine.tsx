@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Modal, Platform, Vibration, View } from "react-native";
+import { AppState, BackHandler, Modal, Platform, Vibration, View } from "react-native";
 import { ago, dateKey } from "../lib/date";
 import { eventsOn, taskOf } from "../lib/logic";
 import { ensurePermission, setupNotifications, silence, syncNotifications } from "../lib/notify";
@@ -60,6 +60,17 @@ export function AlarmEngine() {
     return () => clearTimeout(t);
   }, [sig]);
 
+  // An alarm that woke the app (it came to the foreground within moments of the ring screen, before or after it) closes the app again when the last ring is done: the app may be showing over the lock screen, and must not stay usable there.
+  const woke = useRef(0), ringAt = useRef(0), leave = useRef(false), ringing = ui.ring.length > 0;
+  useEffect(() => { woke.current = Date.now(); const sub = AppState.addEventListener("change", (a) => { if (a === "active") woke.current = Date.now(); }); return () => sub.remove(); }, []);
+  useEffect(() => { if (ringing) ringAt.current = Date.now(); }, [ringing]);
+  const next = () => {
+    silence(); set((u) => ({ ring: u.ring.slice(1) }));
+    if (Math.abs(woke.current - ringAt.current) < 3000 && ui.ring.length <= 1 && Platform.OS === "android") leave.current = true;
+  };
+  // Leave from an effect, so the sync sees the state that includes a new snooze, and it reaches the schedule before the app goes away.
+  useEffect(() => { if (!ringing && leave.current) { leave.current = false; syncNotifications(latest.current).catch(() => {}).finally(() => BackHandler.exitApp()); } }, [ringing]);
+
   const r = ui.ring[0];
   useEffect(() => {
     if (!r || Platform.OS === "web") return;
@@ -69,15 +80,15 @@ export function AlarmEngine() {
   if (!r) return null;
   const sub = r.snoozed ? "Snoozed reminder" : r.kind === "event" ? (r.pre ? "Starts in " + r.pre + " min" : "Starting now") : "";
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => set((u) => ({ ring: u.ring.slice(1) }))}>
+    <Modal visible transparent animationType="fade" onRequestClose={next}>
       <View style={vars} className="flex-1 justify-center bg-scrim-strong p-4">
         <View accessibilityRole="alert" className="w-full max-w-[360px] items-center gap-3 self-center rounded-sheet bg-card px-4 pb-[18px] pt-[22px]">
           <T tone="muted">{r.kind === "alarm" ? "Alarm" : "Calendar event"}</T>
           <T weight="700" className="text-display tracking-tighter">{r.time}</T>
           <T size="xl" weight="600" className="text-center">{r.title}</T>
           <T size="sm" tone="muted">{sub}{ui.ring.length > 1 ? ` · +${ui.ring.length - 1} more` : ""}</T>
-          <Btn label="Dismiss" className="self-stretch"onPress={() => { silence(); set((u) => ({ ring: u.ring.slice(1) })); }} />
-          <Btn ghost label={`Snooze ${r.snooze || 5} min`} className="self-stretch"onPress={() => { silence(); update((s) => { s.snz.push({ at: Date.now() + (r.snooze || 5) * 60000, item: { ...r, snoozed: 1 } }); }); set((u) => ({ ring: u.ring.slice(1) })); }} />
+          <Btn label="Dismiss" className="self-stretch"onPress={next} />
+          <Btn ghost label={`Snooze ${r.snooze || 5} min`} className="self-stretch"onPress={() => { update((s) => { s.snz.push({ at: Date.now() + (r.snooze || 5) * 60000, item: { ...r, snoozed: 1 } }); }); next(); }} />
         </View>
       </View>
     </Modal>

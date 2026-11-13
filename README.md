@@ -39,3 +39,5 @@ All 17 widgets, Home (life score, Today's agenda), Insights, global search, Sett
 Known differences from the preview: dates and times use the system picker on phones (typed as YYYY-MM-DD and HH:MM on web, with Today / Tomorrow shortcuts). Alarms and event alerts use two custom tones (assets/sounds): an alarm ring for alarms and medicine doses, a short chime for everything else.
 
 Not yet tested on a device or simulator (only the web build was clicked through). `tsc`, `expo lint`, `expo-doctor` and `expo export` for Android, iOS and web pass. `npm test` runs the assert-based checks in scripts/.
+
+Alarms on Android go through Notifee with a full-screen notification, so a ringing alarm opens the app over the lock screen. This needs a development or EAS build, not Expo Go; without it alarms fall back to a normal notification. `plugins/withLockScreen.js` patches `MainActivity` so the app shows over the lock screen only for that launch, and the ring screen closes the app again when the last alarm is done.
