@@ -1,8 +1,9 @@
 // Local notifications for alarms, calendar event alerts and yearly dates (native only).
 // The schedule is rebuilt from the saved state whenever it changes, so it always matches what the app shows.
-import { AppState, NativeModules, Platform } from "react-native";
+import { AppState, Platform } from "react-native";
+import type { NotificationRequestInput } from "expo-notifications";
 import { State } from "../store/types";
-import { nextWeekly, plan } from "./plan";
+import { plan } from "./plan";
 
 // Two channels, because a channel cannot be changed once created and each has its own tone: alarms ring (alarm.wav), everything else chimes (reminder.wav).
 const ALARM = "dailyboard-alarm-v1", REMIND = "dailyboard-reminder-v1";
@@ -11,17 +12,6 @@ const tone = (loud: boolean) => (loud ? "alarm.wav" : "reminder.wav"); // Androi
 export const notificationsSupported = Platform.OS !== "web";
 
 async function mod() { return import("expo-notifications"); }
-
-// Alarms go through Notifee on Android: it can attach a full-screen intent, which opens the app over the lock screen (expo-notifications cannot). Everything else stays on expo-notifications.
-// Only when the native module is in this build: an older dev build or Expo Go lacks it, and alarms then fall back to a normal notification.
-const lockScreen = Platform.OS === "android" && NativeModules.NotifeeApiModule != null;
-async function alarmNote(title: string, body: string, at: number, weekly = false) {
-  const { default: nf, TriggerType, AlarmType, RepeatFrequency, AndroidCategory } = await import("@notifee/react-native");
-  await nf.createTriggerNotification(
-    { title, body, android: { channelId: ALARM, category: AndroidCategory.ALARM, loopSound: true, timeoutAfter: 120000, fullScreenAction: { id: "default" }, pressAction: { id: "default" } } }, // the channel (set up below) carries the tone; loopSound repeats it until dismissed
-    { type: TriggerType.TIMESTAMP, timestamp: at, alarmManager: { type: AlarmType.SET_ALARM_CLOCK }, ...(weekly ? { repeatFrequency: RepeatFrequency.WEEKLY } : {}) },
-  ).catch(() => {}); // one bad alarm must not drop the ones after it
-}
 
 /** Ask once. Returns true when notifications are allowed. */
 export async function ensurePermission(): Promise<boolean> {
@@ -59,13 +49,10 @@ export async function setupNotifications() {
 }
 
 /** Clears the alarm notification, which also stops its tone: used when the ring screen is dismissed or snoozed. */
-export async function silence() {
-  if (!notificationsSupported) return;
-  await (await mod()).dismissAllNotificationsAsync().catch(() => {});
-  if (lockScreen) await (await import("@notifee/react-native")).default.cancelDisplayedNotifications().catch(() => {}); // also stops the looping tone
-}
+export async function silence() { if (notificationsSupported) await (await mod()).dismissAllNotificationsAsync().catch(() => {}); }
 
 let testAt = 0; // when the pending test alarm goes off; a sync must not cancel it
+const testItem = (N: Awaited<ReturnType<typeof mod>>): NotificationRequestInput => ({ content: { title: "Test alarm", body: "Alarms work with the screen off.", sound: tone(true) }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: new Date(testAt), delivery: "alarmClock", ...where(true) } });
 
 /** Sets one alarm a minute from now the same way real ones are set, and returns how many reminders are waiting in total. */
 export async function testAlarm(s: State): Promise<number> {
@@ -73,7 +60,7 @@ export async function testAlarm(s: State): Promise<number> {
   if (!(await ensurePermission())) throw new Error("notifications not allowed");
   testAt = Date.now() + 60000;
   await syncNotifications(s); // through the queue, so it cannot race a sync; run() adds the test item
-  return (await N.getAllScheduledNotificationsAsync()).length + (lockScreen ? (await (await import("@notifee/react-native")).default.getTriggerNotificationIds()).length : 0);
+  return (await N.getAllScheduledNotificationsAsync()).length;
 }
 
 /** One sync at a time: a second one cancelling in the middle of the first would leave stale or doubled reminders. */
@@ -86,15 +73,10 @@ async function run(s: State) {
   const N = await mod();
   if (!(await N.getPermissionsAsync()).granted) return;
   await N.cancelAllScheduledNotificationsAsync();
-  if (lockScreen) await (await import("@notifee/react-native")).default.cancelTriggerNotifications().catch(() => {});
   const p = plan(s);
   const put = (c: Parameters<typeof N.scheduleNotificationAsync>[0]) => N.scheduleNotificationAsync(c).catch(() => {}); // one bad reminder must not drop the ones after it
-  const ring = (loud?: boolean, rung?: boolean) => lockScreen && !!loud && !!rung; // alarms (not event alerts or medicine) get the lock-screen ring
-  if (testAt > Date.now()) { // a pending test alarm survives a sync
-    if (lockScreen) await alarmNote("Test alarm", "Alarms work with the screen off.", testAt);
-    else await put({ content: { title: "Test alarm", body: "Alarms work with the screen off.", sound: tone(true) }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: new Date(testAt), delivery: "alarmClock", ...where(true) } });
-  }
+  if (testAt > Date.now()) await put(testItem(N)); // a pending test alarm survives a sync
   for (const d of p.daily) await put({ content: { title: d.title, body: d.body, sound: tone(false), data: { ring: !!d.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.DAILY, hour: d.hour, minute: d.minute, delivery: d.ring ? "alarmClock" : "bestEffort", ...where(false) } });
-  for (const w of p.weekly) if (ring(w.loud, w.ring)) await alarmNote(w.title, w.body, nextWeekly(w), true); else await put({ content: { title: w.title, body: w.body, sound: tone(!!w.ring), data: { ring: !!w.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.WEEKLY, weekday: w.weekday, hour: w.hour, minute: w.minute, delivery: w.ring ? "alarmClock" : "bestEffort", ...where(!!w.ring) } });
-  for (const o of p.once) if (ring(o.loud, o.ring)) await alarmNote(o.title, o.body, +o.at); else await put({ content: { title: o.title, body: o.body, sound: tone(!!o.loud), data: { ring: !!o.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: o.at, delivery: o.ring || o.exact ? "alarmClock" : "bestEffort", ...where(!!o.loud) } });
+  for (const w of p.weekly) await put({ content: { title: w.title, body: w.body, sound: tone(!!w.ring), data: { ring: !!w.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.WEEKLY, weekday: w.weekday, hour: w.hour, minute: w.minute, delivery: w.ring ? "alarmClock" : "bestEffort", ...where(!!w.ring) } });
+  for (const o of p.once) await put({ content: { title: o.title, body: o.body, sound: tone(!!o.loud), data: { ring: !!o.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: o.at, delivery: o.ring || o.exact ? "alarmClock" : "bestEffort", ...where(!!o.loud) } });
 }

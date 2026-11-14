@@ -4,17 +4,9 @@ import { dateKey } from "./date";
 import { allTasks, daysTo, money, nextOcc, ntitle, repeatsOn, repOf, taskOf } from "./logic";
 
 type Planned = { at: Date; title: string; body: string; ring?: boolean; exact?: boolean; loud?: boolean }; // loud: the alarm tone on the alarm channel; the rest chime // ring: the app rings this one itself while it is open
-type Weekly = { weekday: number; hour: number; minute: number; title: string; body: string; ring?: boolean; loud?: boolean };
+type Weekly = { weekday: number; hour: number; minute: number; title: string; body: string; ring?: boolean };
 type Daily = { hour: number; minute: number; title: string; body: string; ring?: boolean };
 const at9 = (k: string, back = 0) => { const d = new Date(k + "T09:00:00"); d.setDate(d.getDate() - back); return d; }; // morning reminders go out at 09:00
-
-/** The next time a weekly item fires, as a timestamp (expo weekday: 1 = Sunday). */
-export function nextWeekly(w: { weekday: number; hour: number; minute: number }, now = new Date()): number {
-  const d = new Date(now); d.setHours(w.hour, w.minute, 0, 0);
-  d.setDate(d.getDate() + ((w.weekday - 1 - d.getDay() + 7) % 7));
-  if (d <= now) d.setDate(d.getDate() + 7);
-  return +d;
-}
 
 /** What should be scheduled for this state. */
 export function plan(s: State, now = new Date()): { once: Planned[]; weekly: Weekly[]; daily: Daily[] } {
@@ -22,7 +14,7 @@ export function plan(s: State, now = new Date()): { once: Planned[]; weekly: Wee
   const soon = (t: Date) => t > now && +t < horizon;
   s.alarms.filter((a) => a.on).forEach((a) => {
     const [h, m] = a.t.split(":").map(Number), title = a.label || "Alarm";
-    if (a.days.length) a.days.forEach((d) => weekly.push({ weekday: ((d + 1) % 7) + 1, hour: h, minute: m, title, body: "Alarm " + a.t, ring: true, loud: true })); // expo weekday: 1 = Sunday
+    if (a.days.length) a.days.forEach((d) => weekly.push({ weekday: ((d + 1) % 7) + 1, hour: h, minute: m, title, body: "Alarm " + a.t, ring: true })); // expo weekday: 1 = Sunday
     else for (let i = 0; i < 2; i++) { const t = new Date(now); t.setDate(t.getDate() + i); t.setHours(h, m, 0, 0); if (t > now) { once.push({ at: t, title, body: "Alarm " + a.t, ring: true, loud: true }); break; } }
   });
   s.snz.filter((z) => z.at > +now).forEach((z) => once.push({ at: new Date(z.at), title: z.item.title, body: "Snoozed", ring: true, loud: z.item.kind === "alarm" })); // a snooze has to ring with the app closed too

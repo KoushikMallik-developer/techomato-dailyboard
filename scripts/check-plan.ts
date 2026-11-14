@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { dateKey, todayKey } from "../src/lib/date";
 import { billState, budgetRows, money, rollAlarms } from "../src/lib/logic";
 import { perMonth, perYear, rollSubs } from "../src/lib/subs";
-import { plan, nextWeekly } from "../src/lib/plan";
+import { plan } from "../src/lib/plan";
 import { review } from "../src/lib/review";
 import { load } from "../src/store/load";
 import { addSample, hasSample, removeSample, seed as blank } from "../src/store/seed";
@@ -209,11 +209,4 @@ assert.equal(money(usd, 4.99), "$4.99"); assert.equal(money(usd, 5), "$5"); asse
 const wrong = JSON.parse(JSON.stringify(blank())) as Record<string, unknown>; wrong.events = null; wrong.snz = {}; wrong.nid = "x";
 const fixed = load(JSON.stringify(wrong));
 assert.ok(Array.isArray(fixed.events) && Array.isArray(fixed.snz) && typeof fixed.nid === "number", "wrong types in a backup are replaced");
-// weekly alarms: the next firing is in the future, within a week, on the right weekday (expo weekday 1 = Sunday)
-const wk = new Date(2026, 10, 13, 10, 0); // Friday 13 Nov 2026, 10:00
-assert.equal(new Date(nextWeekly({ weekday: 6, hour: 11, minute: 0 }, wk)).getDate(), 13, "later today");
-assert.equal(new Date(nextWeekly({ weekday: 6, hour: 9, minute: 0 }, wk)).getDate(), 20, "time gone: next week");
-assert.equal(new Date(nextWeekly({ weekday: 1, hour: 7, minute: 30 }, wk)).getDay(), 0, "Sunday");
-const wa = blank(); wa.alarms.push({ id: 1, t: "07:00", label: "w", days: [0, 2], snooze: 5, on: 1 });
-assert.ok(plan(wa, wk).weekly.length === 2 && plan(wa, wk).weekly.every((w) => w.loud && w.ring), "weekly alarms are loud, so they get the lock-screen ring");
 console.log("plan checks passed");

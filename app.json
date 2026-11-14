@@ -21,7 +21,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM", "android.permission.USE_FULL_SCREEN_INTENT"]
+      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM"]
     },
     "web": {
       "bundler": "metro",
@@ -44,7 +44,6 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "./plugins/withLockScreen",
       ["expo-notifications", { "sounds": ["./assets/sounds/alarm.wav", "./assets/sounds/reminder.wav"] }],
       [
         "expo-build-properties",
