@@ -1,6 +1,8 @@
+![DailyBoard: Plan. Track. Remember.](assets/banners/dailyboard/bold-type-1920x800.png)
+
 # Techomato DailyBoard
 
-A customizable "real life dashboard" for Android, iOS and web. One home screen of widgets (habits, tasks, money, notes and more). Everything is stored on the device. There is no account and no server.
+A customizable "real life dashboard" for Android, iOS and web. One home screen of widgets (habits, tasks, money, notes and more). Everything is stored on the device. Optionally, sign in with email to back it up to Firebase (free Spark plan) and use it on another phone; copy `.env.example` to `.env`, fill in your Firebase web app keys, and publish `firestore.rules`. Without the keys the app has no account and no server.
 
 Built with Expo (SDK 58), React Native, TypeScript and Expo Router.
 

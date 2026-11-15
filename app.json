@@ -21,7 +21,9 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM"]
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -44,7 +46,15 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      ["expo-notifications", { "sounds": ["./assets/sounds/alarm.wav", "./assets/sounds/reminder.wav"] }],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/alarm.wav",
+            "./assets/sounds/reminder.wav"
+          ]
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -54,7 +64,13 @@
           }
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE-WITH-IOS-CLIENT-ID"
+        }
+      ]
     ],
     "extra": {
       "router": {

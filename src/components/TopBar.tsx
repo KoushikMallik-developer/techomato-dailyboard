@@ -6,7 +6,7 @@ import { T } from "./ui";
 export function TopBar() {
   return (
     <View className="flex-row items-center gap-2 pt-0.5">
-      <Logo size={22} />
+      <Logo size={22} decorative />
       <T weight="700" size="base" className="tracking-tight">DailyBoard</T>
     </View>
   );

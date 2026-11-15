@@ -43,7 +43,7 @@ export function Hero() {
               <AnimatedCircle cx={42} cy={42} r={R} fill="none" stroke={c.ring} strokeWidth={8} strokeLinecap="round" strokeDasharray={C} animatedProps={ring} />
             </G>
           </Svg>
-          <T size="xl" weight="700" tone="panelStrong">{sc}</T>
+          <T size="xl" weight="700" tone="panelStrong" maxFontSizeMultiplier={1.3}>{sc}</T>
         </View>
       </View>
       <View className="flex-row gap-2">
@@ -90,7 +90,7 @@ export function Agenda() {
   state.dates.filter((x) => daysTo(x) <= x.rem).sort((a, b) => daysTo(a) - daysTo(b)).forEach((x) => { const n = daysTo(x); add("d" + x.id, <Row title={x.n} sub={`${x.kind === "Other" ? "Yearly date" : x.kind} · ${dateLabel(x, Number(nextOcc(x).slice(0, 4)))}`} right={<Tag label={inTxt(n)} tone={n === 0 ? "ok" : "m"} />} onPress={() => go("dates")} />); });
   bl.forEach((b) => add("b" + b.id, <Row title={b.n + " bill"} sub={money(state, b.a)} right={<Tag label={billState(b).t} tone={billState(b).c} />} onPress={() => go("bills")} />));
   return (
-    <Card title="Today's agenda" small={`${rows.length} items`}>
+    <Card title="Today's agenda" small={`${rows.length} ${rows.length === 1 ? "item" : "items"}`}>
       {rows.length ? (all ? rows : rows.slice(0, 8)).map((r) => <View key={r.key}>{r.node}</View>) : <T tone="muted" className="py-4 text-center">Nothing urgent today.</T>}
       {rows.length > 8 ? <View className="items-start pt-1"><LinkBtn tone="brand" label={all ? "Show less" : `Show all ${rows.length}`} onPress={() => setAll(!all)} /></View> : null}
     </Card>

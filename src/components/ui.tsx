@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { cssInterop } from "nativewind";
-import { ComponentProps, createContext, ReactNode, useContext, useEffect, useRef } from "react";
+import { ComponentProps, ComponentRef, createContext, ReactNode, Ref, useContext, useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps, TextProps, View, ViewStyle } from "react-native";
 import Animated, { FadeInDown, interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -106,9 +106,9 @@ export function Btn({ label, onPress, ghost, danger, small, style, className }: 
 }
 
 /** Small tappable text. The hit slop keeps the touch target at 44px. */
-export function LinkBtn({ label, onPress, tone = "muted" }: { label: string; onPress: () => void; tone?: Tone }) {
+export function LinkBtn({ label, onPress, tone = "muted", a11y }: { label: string; onPress: () => void; tone?: Tone; a11y?: string }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }} className="rounded-xs px-1.5 py-1 active:opacity-70">
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} hitSlop={{ top: 14, bottom: 14, left: 6, right: 6 }} className="rounded-xs px-1.5 py-1 active:opacity-70">
       <T size="sm" tone={tone}>{label}</T>
     </Pressable>
   );
@@ -154,7 +154,7 @@ export function Toggle({ value, onChange, label }: { value: boolean; onChange: (
   const { c } = useTheme();
   const ok = useMotion(), p = useSharedValue(value ? 1 : 0);
   useEffect(() => { p.value = ok ? withSpring(value ? 1 : 0, SPRING) : value ? 1 : 0; }, [value, ok, p]);
-  const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(p.value, [0, 1], [c.line, c.brand]) }));
+  const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(p.value, [0, 1], [c.muted, c.brand]) }));
   const knob = useAnimatedStyle(() => ({ transform: [{ translateX: p.value * 18 }] }));
   return (
     <Pressable onPress={() => onChange(!value)} accessibilityRole="switch" accessibilityState={{ checked: value }} accessibilityLabel={label} hitSlop={9}>
@@ -202,7 +202,7 @@ export function Tag({ label, tone = "" }: { label: string; tone?: TagTone }) {
   return <View className={cx("self-start rounded-xs px-1.5 py-0.5", bg)}><T size="xs" weight="600" tone={text} className="uppercase tracking-wide">{label}</T></View>;
 }
 
-export function Input({ className, ...rest }: TextInputProps & { className?: string }) {
+export function Input({ className, ...rest }: TextInputProps & { className?: string; ref?: Ref<ComponentRef<typeof TextInput>> }) { // React 19: ref is an ordinary prop, passed on to the TextInput through rest
   const { c } = useTheme();
   return <TextInput placeholderTextColor={c.muted} textAlignVertical={rest.multiline ? "top" : undefined} {...rest} className={cx("min-h-hit rounded-sm border border-line bg-soft px-3 py-2.5 font-i4 text-base text-ink", className)} />;
 }

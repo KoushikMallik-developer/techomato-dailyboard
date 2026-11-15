@@ -31,7 +31,7 @@ export function NotesCard() {
   const open = useOpenNote();
   const L = state.notes.filter((n) => n.st === "on").sort((a, b) => b.pin - a.pin || b.m - a.m);
   return (
-    <Card title="Notes" small={`${L.length} notes`}>
+    <Card title="Notes" small={`${L.length} ${L.length === 1 ? "note" : "notes"}`}>
       {L.length ? L.slice(0, 3).map((n) => <NoteRow key={n.id} n={n} onOpen={() => open(n.id)} />) : <Empty text="No notes yet." />}
       {L.length > 3 ? <MoreLink to="notes" n={L.length - 3} /> : null}
     </Card>
@@ -100,7 +100,7 @@ function Editor({ id }: { id: number }) {
         </Card>
       ) : null}
       <T size="xs" tone="muted" className="text-center">{new Date(n.m).toLocaleString([], { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} · {nwords(n)} words</T>
-      <TextInput value={title} onChangeText={(v) => { setTitle(v); later((x) => { x.t = v; }); }} placeholder="Title" placeholderTextColor={c.muted} maxLength={120} accessibilityLabel="Title" className={`${input} font-i7 text-[26px]`} />
+      <TextInput value={title} onChangeText={(v) => { setTitle(v); later((x) => { x.t = v; }); }} placeholder="Title" placeholderTextColor={c.muted} maxLength={120} accessibilityLabel="Title" className={`${input} font-i7 text-2xl`} />
       <TextInput value={body} onChangeText={(v) => { setBody(v); later((x) => { x.body = v; }); }} placeholder="Note" placeholderTextColor={c.muted} multiline maxLength={8000} accessibilityLabel="Note text" textAlignVertical="top" className={`${input} min-h-note text-base`} />
       {n.items.map((it, i) => (
         <View key={i} className="flex-row items-center gap-3 min-h-hit">

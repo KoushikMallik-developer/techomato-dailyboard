@@ -1,30 +1,13 @@
 import { useState } from "react";
 import { View } from "react-native";
-import Svg, { Circle, G, Line, Polyline, Rect, Text as SText } from "react-native-svg";
+import Svg, { Circle, G, Line, Polyline, Text as SText } from "react-native-svg";
 import { Pt, sum } from "../lib/logic";
 import { useTheme } from "../theme/ThemeProvider";
 import { T } from "./ui";
 
-/** Bar chart ported from bars() in the preview. 336x124 viewBox, optional dashed target line. */
+/** Bar chart for the widgets: the same bars as Insights (Columns), with the highest value written above. */
 export function Bars({ data, fmt = (n: number) => String(n), target }: { data: Pt[]; fmt?: (n: number) => string; target?: number }) {
-  const { c } = useTheme();
-  const mx = Math.max(1, target || 0, ...data.map((d) => d.v)), n = data.length, step = 336 / n, bw = Math.min(22, step - 6);
-  const ty = target ? 100 - (target / mx) * 84 : 0;
-  return (
-    <Svg viewBox="0 0 336 124" width="100%" height={124} accessibilityLabel={`Bar chart, highest ${fmt(mx)}`}>
-      <SText x={0} y={10} fontSize={10} fill={c.muted}>{fmt(mx)}</SText>
-      <Line x1={0} y1={14} x2={336} y2={14} stroke={c.line} strokeWidth={1} />
-      <Line x1={0} y1={100} x2={336} y2={100} stroke={c.line} strokeWidth={1} />
-      {target ? <Line x1={0} x2={336} y1={ty} y2={ty} stroke={c.muted} strokeWidth={1} strokeDasharray="4 3" /> : null}
-      {data.map((d, i) => {
-        const h = (d.v / mx) * 84;
-        return (
-          <Rect key={d.k} x={i * step + (step - bw) / 2} y={100 - h} width={bw} height={h} rx={3} fill={d.hi ? c.brand : c.ring} opacity={d.hi ? 1 : 0.55} />
-        );
-      })}
-      {data.map((d, i) => <SText key={"l" + d.k} x={i * step + step / 2} y={114} fontSize={9} textAnchor="middle" fill={c.muted}>{d.l}</SText>)}
-    </Svg>
-  );
+  return <Columns data={data} target={target} fmt={fmt} label="Bar chart" peak height={124} />;
 }
 
 /** Line chart for weight. */
@@ -34,10 +17,10 @@ export function LineChart({ values, unit }: { values: number[]; unit: string }) 
   const pts = values.map((v, i) => [8 + i * (320 / (values.length - 1)), 94 - ((v - mn) / (mx - mn)) * 78] as const);
   const r = (n: number) => (Math.round(n * 10) / 10).toLocaleString();
   return (
-    <Svg viewBox="0 0 336 110" width="100%" height={110} accessibilityLabel={`Weight from ${values[0]} to ${values[values.length - 1]} ${unit}`}>
-      <SText x={0} y={10} fontSize={10} fill={c.muted}>{r(mx)} {unit}</SText>
+    <Svg viewBox="0 0 336 116" width="100%" height={116} accessibilityLabel={`Weight from ${values[0]} to ${values[values.length - 1]} ${unit}`}>
+      <SText x={0} y={11} fontSize={12} fill={c.muted}>{r(mx)} {unit}</SText>
       <Line x1={0} y1={100} x2={336} y2={100} stroke={c.line} strokeWidth={1} />
-      <SText x={0} y={109} fontSize={10} fill={c.muted}>{r(mn)} {unit}</SText>
+      <SText x={0} y={114} fontSize={12} fill={c.muted}>{r(mn)} {unit}</SText>
       <Polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke={c.brand} strokeWidth={2} />
       {pts.map((p, i) => <Circle key={i} cx={p[0]} cy={p[1]} r={3} fill={c.brand} />)}
     </Svg>
@@ -49,14 +32,15 @@ export function LineChart({ values, unit }: { values: number[]; unit: string }) 
 export type BarPoint = { l: string; v: number; hi?: boolean };
 
 /** Vertical bars with an optional dashed target line. Labels show on every bar for a week, and every fifth for longer spans. */
-export function Columns({ data, target, label, fmt = String, height = 112, top = 0 }: { data: BarPoint[]; target?: number; label: string; fmt?: (v: number) => string; height?: number; top?: number }) {
+export function Columns({ data, target, label, fmt = String, height = 112, top = 0, peak }: { data: BarPoint[]; target?: number; label: string; fmt?: (v: number) => string; height?: number; top?: number; peak?: boolean }) {
   const { c } = useTheme();
   const n = data.length, max = Math.max(1, top, target ?? 0, ...data.map((d) => d.v)), gap = n > 14 ? 2 : 6;
   const summary = `${label}. Highest ${fmt(Math.max(0, ...data.map((d) => d.v)))}, average ${fmt(n ? sum(data.map((d) => d.v)) / n : 0)}${target ? `, target ${fmt(target)}` : ""}.`;
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={summary}>
+      {peak ? <T size="xs" tone="muted" className="mb-1">{fmt(max)}</T> : null}
       <View style={{ height, flexDirection: "row", alignItems: "flex-end", gap }}>
-        {data.map((d, i) => <View key={i} style={{ flex: 1, height: d.v > 0 ? Math.max(3, (d.v / max) * height) : 0, backgroundColor: c.brand, opacity: d.hi ? 1 : 0.55, borderTopLeftRadius: 3, borderTopRightRadius: 3 }} />)}
+        {data.map((d, i) => <View key={i} style={{ flex: 1, height: d.v > 0 ? Math.max(3, (d.v / max) * height) : 0, backgroundColor: c.brand, opacity: d.hi ? 1 : 0.8, borderTopLeftRadius: 3, borderTopRightRadius: 3 }} />)}
         {target ? <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: (target / max) * height, borderTopWidth: 1, borderStyle: "dashed", borderColor: c.muted }} /> : null}
       </View>
       <View style={{ flexDirection: "row", gap, marginTop: 4 }}>

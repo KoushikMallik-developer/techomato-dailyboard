@@ -8,8 +8,13 @@ import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { BrandSplash } from "../components/BrandSplash";
 import { AlarmEngine } from "../components/AlarmEngine";
+import { AuthShell } from "../components/AuthShell";
+import { Login } from "../components/Login";
+import { T } from "../components/ui";
+import { VerifyEmail } from "../components/VerifyEmail";
 import { SheetHost } from "../components/Sheet";
-import { StoreProvider } from "../store/store";
+import { cloudOn } from "../lib/cloud";
+import { StoreProvider, useStore } from "../store/store";
 import { UiProvider } from "../store/ui";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 
@@ -18,8 +23,12 @@ SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 300, fade: true });
 
 function Shell({ onReady }: { onReady: () => void }) {
-  const { c, dark } = useTheme();
-  useEffect(() => { onReady(); }, [onReady]); // Shell mounts only once saved data has loaded
+  const { c, dark } = useTheme(), { account } = useStore();
+  useEffect(() => { if (account.known) onReady(); }, [account.known, onReady]); // saved data has loaded, and so has the sign-in state
+  if (!account.known) return null;
+  if (!cloudOn && !__DEV__) return <><StatusBar style={dark ? "light" : "dark"} /><AuthShell><T size="xl" weight="700">Setup missing</T><T tone="muted">This build has no Firebase keys, so sign-in is not possible. Add the EXPO_PUBLIC_FIREBASE_* values to the build and rebuild.</T></AuthShell></>; // never open the app without a login wall in a release build
+  if (cloudOn && !account.signedIn) return <><StatusBar style={dark ? "light" : "dark"} /><Login /></>; // no sign-in, no app
+  if (cloudOn && !account.verified) return <><StatusBar style={dark ? "light" : "dark"} /><VerifyEmail /></>; // nor before the email is confirmed
   return (
     <>
       <StatusBar style={dark ? "light" : "dark"} />
@@ -43,7 +52,7 @@ export default function Root() {
   if (!fonts) return null;
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, overflow: "hidden" }}>
         <StoreProvider>
           <ThemeProvider>
             <UiProvider>

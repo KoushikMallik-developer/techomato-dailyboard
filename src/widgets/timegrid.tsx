@@ -30,7 +30,7 @@ export function TimeGrid({ days, byDay, onSlot, onEvent, onDay, selected, faded 
               <Pressable key={d} onPress={() => onDay?.(d)} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={dt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} style={{ flex: 1, alignItems: "center", gap: 2 }}>
                 <T size="xs" tone="muted">{["S", "M", "T", "W", "T", "F", "S"][dt.getDay()]}</T>
                 <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: on ? c.brand : "transparent", borderWidth: isToday && !on ? 1.5 : 0, borderColor: c.brand }}>
-                  <T size="md" weight={isToday ? "700" : "500"} tone={on ? "onBrand" : isToday ? "brand" : "ink"}>{dt.getDate()}</T>
+                  <T size="md" weight={isToday ? "700" : "500"} tone={on ? "onBrand" : isToday ? "brand" : "ink"} maxFontSizeMultiplier={1.3}>{dt.getDate()}</T>
                 </View>
               </Pressable>
             );

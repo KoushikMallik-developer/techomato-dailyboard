@@ -1,7 +1,6 @@
 // Local notifications for alarms, calendar event alerts and yearly dates (native only).
 // The schedule is rebuilt from the saved state whenever it changes, so it always matches what the app shows.
 import { AppState, Platform } from "react-native";
-import type { NotificationRequestInput } from "expo-notifications";
 import { State } from "../store/types";
 import { plan } from "./plan";
 
@@ -51,18 +50,6 @@ export async function setupNotifications() {
 /** Clears the alarm notification, which also stops its tone: used when the ring screen is dismissed or snoozed. */
 export async function silence() { if (notificationsSupported) await (await mod()).dismissAllNotificationsAsync().catch(() => {}); }
 
-let testAt = 0; // when the pending test alarm goes off; a sync must not cancel it
-const testItem = (N: Awaited<ReturnType<typeof mod>>): NotificationRequestInput => ({ content: { title: "Test alarm", body: "Alarms work with the screen off.", sound: tone(true) }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: new Date(testAt), delivery: "alarmClock", ...where(true) } });
-
-/** Sets one alarm a minute from now the same way real ones are set, and returns how many reminders are waiting in total. */
-export async function testAlarm(s: State): Promise<number> {
-  const N = await mod();
-  if (!(await ensurePermission())) throw new Error("notifications not allowed");
-  testAt = Date.now() + 60000;
-  await syncNotifications(s); // through the queue, so it cannot race a sync; run() adds the test item
-  return (await N.getAllScheduledNotificationsAsync()).length;
-}
-
 /** One sync at a time: a second one cancelling in the middle of the first would leave stale or doubled reminders. */
 let queue: Promise<unknown> = Promise.resolve();
 export const syncNotifications = (s: State): Promise<void> => (queue = queue.catch(() => {}).then(() => run(s))) as Promise<void>;
@@ -75,7 +62,6 @@ async function run(s: State) {
   await N.cancelAllScheduledNotificationsAsync();
   const p = plan(s);
   const put = (c: Parameters<typeof N.scheduleNotificationAsync>[0]) => N.scheduleNotificationAsync(c).catch(() => {}); // one bad reminder must not drop the ones after it
-  if (testAt > Date.now()) await put(testItem(N)); // a pending test alarm survives a sync
   for (const d of p.daily) await put({ content: { title: d.title, body: d.body, sound: tone(false), data: { ring: !!d.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.DAILY, hour: d.hour, minute: d.minute, delivery: d.ring ? "alarmClock" : "bestEffort", ...where(false) } });
   for (const w of p.weekly) await put({ content: { title: w.title, body: w.body, sound: tone(!!w.ring), data: { ring: !!w.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.WEEKLY, weekday: w.weekday, hour: w.hour, minute: w.minute, delivery: w.ring ? "alarmClock" : "bestEffort", ...where(!!w.ring) } });
   for (const o of p.once) await put({ content: { title: o.title, body: o.body, sound: tone(!!o.loud), data: { ring: !!o.ring } }, trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: o.at, delivery: o.ring || o.exact ? "alarmClock" : "bestEffort", ...where(!!o.loud) } });

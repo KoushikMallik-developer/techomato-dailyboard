@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each signed-in user with a verified email can read, write and delete only their own backup document, which holds nothing but the data text and its time.
+    match /users/{uid} {
+      function owner() { return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true; }
+      allow read, delete: if owner();
+      allow create, update: if owner() && request.resource.data.keys().hasOnly(['json', 'ts']) && request.resource.data.json is string && request.resource.data.ts is number;
+    }
+  }
+}

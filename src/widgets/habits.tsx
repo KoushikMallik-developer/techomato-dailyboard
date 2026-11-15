@@ -13,8 +13,8 @@ export function useToggle() {
 
 function Dot({ on, today, label, onPress }: { on: boolean; today?: boolean; label: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} hitSlop={6} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={label}
-      className={`h-[22px] w-[22px] rounded-full ${today ? "border-2" : "border-[1.5px]"} ${on ? "border-brand bg-brand" : today ? "border-ink" : "border-line"}`} />
+    <Pressable onPress={onPress} hitSlop={{ top: 11, bottom: 11, left: 2, right: 2 }} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={label}
+      className={`h-[22px] w-[22px] rounded-full ${today ? "border-2" : "border-[1.5px]"} ${on ? "border-brand bg-brand" : today ? "border-ink" : "border-muted"}`} />
   );
 }
 

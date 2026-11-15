@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from "react-native";
 import Animated, { SlideInDown } from "react-native-reanimated";
 import { addRep, dateKey, fromKey, todayKey } from "../lib/date";
 import { byId, CATS, monthKey, newNote, PCAT, PST, setTaskDone, syncTaskEvent, syncWaterHabit, taskOf, dk } from "../lib/logic";
@@ -85,8 +85,8 @@ export function SheetHost() {
     <Modal visible={open} transparent animationType="fade" onRequestClose={closeSheet} statusBarTranslucent>
       {/* a Modal is a separate native window, so the theme variables must be set again */}
       <View style={vars} className="flex-1">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 justify-end bg-scrim">
-        <Pressable className="flex-1" onPress={closeSheet} accessibilityLabel="Close" />
+      <KeyboardAvoidingView behavior="padding" className="flex-1 justify-end bg-scrim">
+        <Pressable className="flex-1" onPress={closeSheet} accessibilityRole="button" accessibilityLabel="Close" />
         <Animated.View entering={motion ? SlideInDown.duration(DUR.base).easing(EASE) : undefined} style={{ maxWidth: sheetW, maxHeight: "88%", width: "100%", alignSelf: "center" }}>
         <View className="shrink rounded-t-sheet bg-card px-4 pb-[18px] pt-2">
           <View className="mx-auto mb-3 mt-1 h-1 w-[38px] rounded-sm bg-line" />

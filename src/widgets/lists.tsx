@@ -175,7 +175,7 @@ export function JournalPage() {
 export const changeWater = (s: State, d: number) => { const t = todayKey(); s.health.water[t] = Math.max(0, (s.health.water[t] || 0) + d); syncWaterHabit(s); };
 function Step({ label, plus, onPress }: { label: string; plus?: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} className={`h-10 w-10 items-center justify-center rounded-md active:opacity-70 ${plus ? "bg-brand" : "border border-line bg-soft"}`}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} className={`h-hit w-hit items-center justify-center rounded-md active:opacity-70 ${plus ? "bg-brand" : "border border-line bg-soft"}`}>
       <T size="xl" weight="600" tone={plus ? "onBrand" : "ink"}>{plus ? "+" : "−"}</T>
     </Pressable>
   );
